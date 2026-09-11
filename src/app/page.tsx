@@ -1,3 +1,5 @@
+import QuickCaptureForm from "@/components/QuickCaptureForm";
+
 export default function Home() {
   return (
     <main>
@@ -8,11 +10,7 @@ export default function Home() {
       <section>
         <h2>Quick capture</h2>
         <p>Add a GitHub issue or pull request that you want to revisit.</p>
-        <form>
-          <label htmlFor="github-url">GitHub Url</label>
-          <input id="github-url" type="url" />
-          <button>Submit</button>
-        </form>
+        <QuickCaptureForm />
       </section>
     </main>
   );
