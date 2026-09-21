@@ -35,7 +35,7 @@ export default function QuickCaptureForm() {
 
     const serializedEntries = JSON.stringify(entries);
 
-    console.log(serializedEntries);
+    localStorage.setItem("maintainersJournalEntries", serializedEntries);
   }
 
   return (
