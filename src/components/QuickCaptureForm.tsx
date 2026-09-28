@@ -7,6 +7,7 @@ type JournalEntry = {
   id: string;
   githubUrl: string;
   createdAt: string;
+  title?: string;
 };
 
 export default function QuickCaptureForm() {
@@ -33,10 +34,18 @@ export default function QuickCaptureForm() {
       return;
     }
 
+    const title = formData.get("title");
+    if (typeof title !== "string") {
+      return;
+    }
+
+    const cleanTitle = title.trim();
+
     const entry: JournalEntry = {
       id: crypto.randomUUID(),
       githubUrl,
       createdAt: new Date().toISOString(),
+      title: cleanTitle,
     };
 
     const storedEntries = localStorage.getItem("maintainersJournalEntries");
@@ -59,6 +68,8 @@ export default function QuickCaptureForm() {
       <form onSubmit={handleSubmit}>
         <label htmlFor="github-url">GitHub URL</label>
         <input id="github-url" type="url" name="githubUrl" required={true} />
+        <label htmlFor="title">Title</label>
+        <input name="title" id="title" type="text" />
         <button type="submit">Submit</button>
       </form>
       <p>Saved {journalEntries.length}</p>
@@ -71,7 +82,7 @@ export default function QuickCaptureForm() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {entry.githubUrl}
+                {entry.title || entry.githubUrl}
               </a>
               <p>{new Date(entry.createdAt).toLocaleString()}</p>
             </li>
