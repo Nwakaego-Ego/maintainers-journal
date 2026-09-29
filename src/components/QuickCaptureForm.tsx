@@ -8,6 +8,7 @@ type JournalEntry = {
   githubUrl: string;
   createdAt: string;
   title?: string;
+  body?: string;
 };
 
 export default function QuickCaptureForm() {
@@ -38,14 +39,20 @@ export default function QuickCaptureForm() {
     if (typeof title !== "string") {
       return;
     }
-
     const cleanTitle = title.trim();
+
+    const body = formData.get("body");
+    if (typeof body !== "string") {
+      return;
+    }
+    const cleanBody = body.trim();
 
     const entry: JournalEntry = {
       id: crypto.randomUUID(),
       githubUrl,
       createdAt: new Date().toISOString(),
       title: cleanTitle,
+      body: cleanBody,
     };
 
     const storedEntries = localStorage.getItem("maintainersJournalEntries");
@@ -61,6 +68,7 @@ export default function QuickCaptureForm() {
     const serializedEntries = JSON.stringify(entries);
     localStorage.setItem("maintainersJournalEntries", serializedEntries);
     setJournalEntries(entries);
+    event.currentTarget.reset();
   }
 
   return (
@@ -70,6 +78,8 @@ export default function QuickCaptureForm() {
         <input id="github-url" type="url" name="githubUrl" required={true} />
         <label htmlFor="title">Title</label>
         <input name="title" id="title" type="text" />
+        <label htmlFor="body">Journal Note</label>
+        <textarea id="body" name="body" rows={6} />
         <button type="submit">Submit</button>
       </form>
       <p>Saved {journalEntries.length}</p>
@@ -85,6 +95,7 @@ export default function QuickCaptureForm() {
                 {entry.title || entry.githubUrl}
               </a>
               <p>{new Date(entry.createdAt).toLocaleString()}</p>
+              {entry.body && <p className="journal-entry-body">{entry.body}</p>}
             </li>
           );
         })}

@@ -47,3 +47,8 @@ a {
     color-scheme: dark;
   }
 }
+
+.journal-entry-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
