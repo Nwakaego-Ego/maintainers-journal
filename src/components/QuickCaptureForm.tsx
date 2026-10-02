@@ -13,6 +13,7 @@ type JournalEntry = {
 
 export default function QuickCaptureForm() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [previousMatchCount, setPreviousMatchCount] = useState(0);
 
   useEffect(() => {
     const storedEntries = localStorage.getItem("maintainersJournalEntries");
@@ -63,6 +64,13 @@ export default function QuickCaptureForm() {
     } else {
       entries = JSON.parse(storedEntries);
     }
+
+    const matchingEntries = entries.filter(
+      (existingEntry) => existingEntry.githubUrl === githubUrl,
+    );
+
+    setPreviousMatchCount(matchingEntries.length);
+
     entries.push(entry);
 
     const serializedEntries = JSON.stringify(entries);
@@ -82,6 +90,12 @@ export default function QuickCaptureForm() {
         <textarea id="body" name="body" rows={6} />
         <button type="submit">Submit</button>
       </form>
+      {previousMatchCount > 0 && (
+        <p role="status">
+          Earlier entries found for this URL: {previousMatchCount}. The new
+          entry was still saved.
+        </p>
+      )}
       <p>Saved {journalEntries.length}</p>
       <ul>
         {journalEntries.map((entry) => {
