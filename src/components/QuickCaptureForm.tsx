@@ -79,6 +79,20 @@ export default function QuickCaptureForm() {
     event.currentTarget.reset();
   }
 
+  function handleDelete(entryId: string) {
+    const shouldDelete = window.confirm("Delete this journal entry?");
+    if (!shouldDelete) {
+      return;
+    }
+    const remainingEntries = journalEntries.filter((existingEntry) => {
+      return existingEntry.id !== entryId;
+    });
+
+    const serializedEntries = JSON.stringify(remainingEntries);
+    localStorage.setItem("maintainersJournalEntries", serializedEntries);
+    setJournalEntries(remainingEntries);
+  }
+
   return (
     <>
       <form onSubmit={handleSubmit}>
@@ -110,6 +124,14 @@ export default function QuickCaptureForm() {
               </a>
               <p>{new Date(entry.createdAt).toLocaleString()}</p>
               {entry.body && <p className="journal-entry-body">{entry.body}</p>}
+              <button
+                type="button"
+                onClick={() => {
+                  handleDelete(entry.id);
+                }}
+              >
+                Delete
+              </button>
             </li>
           );
         })}
