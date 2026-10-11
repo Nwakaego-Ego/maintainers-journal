@@ -14,6 +14,7 @@ type JournalEntry = {
 export default function QuickCaptureForm() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [previousMatchCount, setPreviousMatchCount] = useState(0);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
 
   useEffect(() => {
     const storedEntries = localStorage.getItem("maintainersJournalEntries");
@@ -93,6 +94,53 @@ export default function QuickCaptureForm() {
     setJournalEntries(remainingEntries);
   }
 
+  function handleEditSubmit(
+    event: FormEvent<HTMLFormElement>,
+    entryId: string,
+  ) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const githubUrl = formData.get("githubUrl");
+
+    if (typeof githubUrl !== "string") {
+      return;
+    }
+
+    const title = formData.get("title");
+
+    if (typeof title !== "string") {
+      return;
+    }
+
+    const cleanTitle = title.trim();
+
+    const body = formData.get("body");
+    if (typeof body !== "string") {
+      return;
+    }
+    const cleanBody = body.trim();
+
+    const updatedEntries = journalEntries.map((existingEntry) => {
+      if (existingEntry.id !== entryId) {
+        return existingEntry;
+      }
+
+      return {
+        ...existingEntry,
+        githubUrl,
+        title: cleanTitle,
+        body: cleanBody,
+      };
+    });
+    localStorage.setItem(
+      "maintainersJournalEntries",
+      JSON.stringify(updatedEntries),
+    );
+
+    setJournalEntries(updatedEntries);
+    setEditingEntryId(null);
+  }
+
   return (
     <>
       <form onSubmit={handleSubmit}>
@@ -100,7 +148,7 @@ export default function QuickCaptureForm() {
         <input id="github-url" type="url" name="githubUrl" required={true} />
         <label htmlFor="title">Title</label>
         <input name="title" id="title" type="text" />
-        <label htmlFor="body">Journal Note</label>
+        <label htmlFor="body">Notes</label>
         <textarea id="body" name="body" rows={6} />
         <button type="submit">Submit</button>
       </form>
@@ -127,11 +175,52 @@ export default function QuickCaptureForm() {
               <button
                 type="button"
                 onClick={() => {
+                  setEditingEntryId(entry.id);
+                }}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => {
                   handleDelete(entry.id);
                 }}
               >
                 Delete
               </button>
+              {editingEntryId === entry.id && (
+                <form onSubmit={(event) => handleEditSubmit(event, entry.id)}>
+                  <label>
+                    GitHub URL
+                    <input
+                      type="url"
+                      name="githubUrl"
+                      defaultValue={entry.githubUrl}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Title
+                    <input
+                      type="text"
+                      name="title"
+                      defaultValue={entry.title}
+                    />
+                  </label>
+
+                  <label>
+                    Notes
+                    <textarea name="body" defaultValue={entry.body} />
+                  </label>
+
+                  <button type="submit">Save changes</button>
+
+                  <button type="button" onClick={() => setEditingEntryId(null)}>
+                    Cancel
+                  </button>
+                </form>
+              )}
             </li>
           );
         })}
