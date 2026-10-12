@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useState, useEffect } from "react";
 
 type JournalEntry = {
@@ -11,6 +11,22 @@ type JournalEntry = {
   body?: string;
   nextStep?: string;
 };
+function isJournalEntry(value: unknown): value is JournalEntry {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const entry = value as Partial<JournalEntry>;
+
+  return (
+    typeof entry.id === "string" &&
+    typeof entry.githubUrl === "string" &&
+    typeof entry.createdAt === "string" &&
+    (entry.title === undefined || typeof entry.title === "string") &&
+    (entry.body === undefined || typeof entry.body === "string") &&
+    (entry.nextStep === undefined || typeof entry.nextStep === "string")
+  );
+}
 
 type JournalCase = {
   githubUrl: string;
@@ -233,13 +249,6 @@ export default function QuickCaptureForm() {
     }
     const cleanBody = body.trim();
 
-    // const nextStep = formData.get("nextStep");
-    // if (typeof nextStep !== "string") {
-    //   return;
-    // }
-
-    // const cleanNextStep = nextStep.trim();
-
     const updatedEntries = journalEntries.map((existingEntry) => {
       if (existingEntry.id !== entryId) {
         return existingEntry;
@@ -250,7 +259,6 @@ export default function QuickCaptureForm() {
         githubUrl,
         title: cleanTitle,
         body: cleanBody,
-        // nextStep: cleanNextStep,
       };
     });
     localStorage.setItem(
@@ -260,6 +268,84 @@ export default function QuickCaptureForm() {
 
     setJournalEntries(updatedEntries);
     setEditingEntryId(null);
+  }
+
+  function handleExport() {
+    const backup = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      entries: journalEntries,
+    };
+
+    const backupText = JSON.stringify(backup, null, 2);
+
+    const backupFile = new Blob([backupText], {
+      type: "application/json",
+    });
+
+    const downloadUrl = URL.createObjectURL(backupFile);
+    const downloadLink = document.createElement("a");
+
+    downloadLink.href = downloadUrl;
+    downloadLink.download = `maintainers-journal-${new Date()
+      .toISOString()
+      .slice(0, 10)}.json`;
+
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+
+    URL.revokeObjectURL(downloadUrl);
+  }
+
+  async function handleImport(event: ChangeEvent<HTMLInputElement>) {
+    const fileInput = event.currentTarget;
+    const backupFile = fileInput.files?.[0];
+
+    if (!backupFile) {
+      return;
+    }
+
+    try {
+      const backupText = await backupFile.text();
+      const backup: unknown = JSON.parse(backupText);
+
+      if (
+        typeof backup !== "object" ||
+        backup === null ||
+        !("version" in backup) ||
+        backup.version !== 1 ||
+        !("entries" in backup) ||
+        !Array.isArray(backup.entries) ||
+        !backup.entries.every(isJournalEntry)
+      ) {
+        throw new Error("Invalid backup");
+      }
+
+      const entriesById = new Map(
+        backup.entries.map((entry) => [entry.id, entry]),
+      );
+
+      for (const existingEntry of journalEntries) {
+        entriesById.set(existingEntry.id, existingEntry);
+      }
+
+      const mergedEntries = Array.from(entriesById.values()).sort((a, b) => {
+        return a.createdAt.localeCompare(b.createdAt);
+      });
+
+      localStorage.setItem(
+        "maintainersJournalEntries",
+        JSON.stringify(mergedEntries),
+      );
+
+      setJournalEntries(mergedEntries);
+      window.alert(`Imported ${backup.entries.length} journal entries.`);
+    } catch {
+      window.alert("This is not a valid Maintainer's Journal backup file.");
+    } finally {
+      fileInput.value = "";
+    }
   }
 
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
@@ -314,6 +400,21 @@ export default function QuickCaptureForm() {
         {journalEntries.length}{" "}
         {journalEntries.length === 1 ? "entry" : "entries"}
       </p>
+      <button
+        type="button"
+        onClick={handleExport}
+        disabled={journalEntries.length === 0}
+      >
+        Export backup
+      </button>
+      <label>
+        Import backup
+        <input
+          type="file"
+          accept=".json,application/json"
+          onChange={handleImport}
+        />
+      </label>
       {normalizedSearchTerm && visibleCases.length === 0 && (
         <p role="status">No saved entries match “{searchTerm.trim()}”.</p>
       )}
@@ -333,11 +434,6 @@ export default function QuickCaptureForm() {
               >
                 {journalCase.githubUrl}
               </a>
-              {/* {currentNextStep && (
-                <p>
-                  <strong>Next step:</strong> {currentNextStep}
-                </p>
-              )} */}
 
               {currentNextStep && latestNextStepEntry && (
                 <>
