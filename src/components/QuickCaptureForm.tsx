@@ -1,35 +1,14 @@
 "use client";
 
 import type { ChangeEvent, FormEvent } from "react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { groupEntriesByUrl } from "../lib/journalCases";
 import {
   isJournalEntry,
   loadJournalEntries,
   saveJournalEntries,
   type JournalEntry,
 } from "../lib/journalStorage";
-
-type JournalCase = {
-  githubUrl: string;
-  entries: JournalEntry[];
-};
-
-function groupEntriesByUrl(entries: JournalEntry[]): JournalCase[] {
-  const casesByUrl = new Map<string, JournalEntry[]>();
-
-  for (const entry of entries) {
-    const existingEntries = casesByUrl.get(entry.githubUrl) ?? [];
-
-    casesByUrl.set(entry.githubUrl, [...existingEntries, entry]);
-  }
-
-  return Array.from(casesByUrl, ([githubUrl, caseEntries]) => {
-    return {
-      githubUrl,
-      entries: caseEntries,
-    };
-  });
-}
 
 export default function QuickCaptureForm() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
@@ -55,23 +34,25 @@ export default function QuickCaptureForm() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
     const formData = new FormData(event.currentTarget);
     const githubUrl = formData.get("githubUrl");
+
     if (typeof githubUrl !== "string") {
       return;
     }
 
     const title = formData.get("title");
+
     if (typeof title !== "string") {
       return;
     }
-    const cleanTitle = title.trim();
 
     const body = formData.get("body");
+
     if (typeof body !== "string") {
       return;
     }
-    const cleanBody = body.trim();
 
     const nextStep = formData.get("nextStep");
 
@@ -79,26 +60,24 @@ export default function QuickCaptureForm() {
       return;
     }
 
-    const cleanNextStep = nextStep.trim();
-
     const entry: JournalEntry = {
       id: crypto.randomUUID(),
       githubUrl,
       createdAt: new Date().toISOString(),
-      title: cleanTitle,
-      body: cleanBody,
-      nextStep: cleanNextStep,
+      title: title.trim(),
+      body: body.trim(),
+      nextStep: nextStep.trim(),
     };
 
     const entries = loadJournalEntries();
-    const matchingEntries = entries.filter(
-      (existingEntry) => existingEntry.githubUrl === githubUrl,
-    );
+
+    const matchingEntries = entries.filter((existingEntry) => {
+      return existingEntry.githubUrl === githubUrl;
+    });
 
     setPreviousMatchCount(matchingEntries.length);
 
     entries.push(entry);
-
     persistJournalEntries(entries);
     event.currentTarget.reset();
   }
@@ -112,16 +91,19 @@ export default function QuickCaptureForm() {
     const formData = new FormData(event.currentTarget);
 
     const title = formData.get("title");
+
     if (typeof title !== "string") {
       return;
     }
 
     const body = formData.get("body");
+
     if (typeof body !== "string") {
       return;
     }
 
     const nextStep = formData.get("nextStep");
+
     if (typeof nextStep !== "string") {
       return;
     }
@@ -171,9 +153,11 @@ export default function QuickCaptureForm() {
 
   function handleDelete(entryId: string) {
     const shouldDelete = window.confirm("Delete this journal entry?");
+
     if (!shouldDelete) {
       return;
     }
+
     const remainingEntries = journalEntries.filter((existingEntry) => {
       return existingEntry.id !== entryId;
     });
@@ -186,6 +170,7 @@ export default function QuickCaptureForm() {
     entryId: string,
   ) {
     event.preventDefault();
+
     const formData = new FormData(event.currentTarget);
     const githubUrl = formData.get("githubUrl");
 
@@ -199,13 +184,11 @@ export default function QuickCaptureForm() {
       return;
     }
 
-    const cleanTitle = title.trim();
-
     const body = formData.get("body");
+
     if (typeof body !== "string") {
       return;
     }
-    const cleanBody = body.trim();
 
     const updatedEntries = journalEntries.map((existingEntry) => {
       if (existingEntry.id !== entryId) {
@@ -215,8 +198,8 @@ export default function QuickCaptureForm() {
       return {
         ...existingEntry,
         githubUrl,
-        title: cleanTitle,
-        body: cleanBody,
+        title: title.trim(),
+        body: body.trim(),
       };
     });
 
@@ -287,7 +270,9 @@ export default function QuickCaptureForm() {
       const mergedEntries = Array.from(entriesById.values()).sort((a, b) => {
         return a.createdAt.localeCompare(b.createdAt);
       });
+
       persistJournalEntries(mergedEntries);
+
       window.alert(`Imported ${backup.entries.length} journal entries.`);
     } catch {
       window.alert("This is not a valid Maintainer's Journal backup file.");
@@ -320,14 +305,19 @@ export default function QuickCaptureForm() {
       <form onSubmit={handleSubmit}>
         <label htmlFor="github-url">GitHub URL</label>
         <input id="github-url" type="url" name="githubUrl" required={true} />
+
         <label htmlFor="title">Title</label>
         <input name="title" id="title" type="text" />
+
         <label htmlFor="body">Notes</label>
         <textarea id="body" name="body" rows={6} />
+
         <label htmlFor="next-step">Next step</label>
         <input id="next-step" type="text" name="nextStep" />
+
         <button type="submit">Submit</button>
       </form>
+
       <label htmlFor="journal-search">Search saved entries</label>
       <input
         id="journal-search"
@@ -336,18 +326,21 @@ export default function QuickCaptureForm() {
         onChange={(event) => setSearchTerm(event.currentTarget.value)}
         placeholder="Search by title, URL, notes, or next step"
       />
+
       {previousMatchCount > 0 && (
         <p role="status">
           Earlier entries found for this URL: {previousMatchCount}. The new
           entry was still saved.
         </p>
       )}
+
       <p>
         Saved {journalCases.length}{" "}
         {journalCases.length === 1 ? "case" : "cases"} containing{" "}
         {journalEntries.length}{" "}
         {journalEntries.length === 1 ? "entry" : "entries"}
       </p>
+
       <button
         type="button"
         onClick={handleExport}
@@ -355,6 +348,7 @@ export default function QuickCaptureForm() {
       >
         Export backup
       </button>
+
       <label>
         Import backup
         <input
@@ -363,9 +357,11 @@ export default function QuickCaptureForm() {
           onChange={handleImport}
         />
       </label>
+
       {normalizedSearchTerm && visibleCases.length === 0 && (
         <p role="status">No saved entries match “{searchTerm.trim()}”.</p>
       )}
+
       <ul>
         {visibleCases.map((journalCase) => {
           const latestNextStepEntry = [...journalCase.entries]
@@ -373,6 +369,7 @@ export default function QuickCaptureForm() {
             .find((entry) => entry.nextStep?.trim());
 
           const currentNextStep = latestNextStepEntry?.nextStep;
+
           return (
             <li key={journalCase.githubUrl}>
               <a
@@ -427,12 +424,14 @@ export default function QuickCaptureForm() {
                   )}
                 </>
               )}
+
               <p>
                 {journalCase.entries.length}{" "}
                 {journalCase.entries.length === 1
                   ? "journal entry"
                   : "journal entries"}
               </p>
+
               <button
                 type="button"
                 onClick={() => {
@@ -475,6 +474,7 @@ export default function QuickCaptureForm() {
                   </button>
                 </form>
               )}
+
               <ol>
                 {journalCase.entries.map((entry) => {
                   return (
@@ -486,6 +486,7 @@ export default function QuickCaptureForm() {
                       {entry.body && (
                         <p className="journal-entry-body">{entry.body}</p>
                       )}
+
                       <button
                         type="button"
                         onClick={() => {
@@ -506,9 +507,9 @@ export default function QuickCaptureForm() {
 
                       {editingEntryId === entry.id && (
                         <form
-                          onSubmit={(event) =>
-                            handleEditSubmit(event, entry.id)
-                          }
+                          onSubmit={(event) => {
+                            handleEditSubmit(event, entry.id);
+                          }}
                         >
                           <label>
                             GitHub URL
@@ -538,7 +539,9 @@ export default function QuickCaptureForm() {
 
                           <button
                             type="button"
-                            onClick={() => setEditingEntryId(null)}
+                            onClick={() => {
+                              setEditingEntryId(null);
+                            }}
                           >
                             Cancel
                           </button>
