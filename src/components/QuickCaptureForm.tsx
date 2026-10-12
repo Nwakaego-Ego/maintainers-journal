@@ -48,6 +48,11 @@ export default function QuickCaptureForm() {
     setJournalEntries(entries);
   }, []);
 
+  function persistJournalEntries(entries: JournalEntry[]) {
+    saveJournalEntries(entries);
+    setJournalEntries(entries);
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -94,8 +99,7 @@ export default function QuickCaptureForm() {
 
     entries.push(entry);
 
-    saveJournalEntries(entries);
-    setJournalEntries(entries);
+    persistJournalEntries(entries);
     event.currentTarget.reset();
   }
 
@@ -133,9 +137,7 @@ export default function QuickCaptureForm() {
 
     const updatedEntries = [...journalEntries, newEntry];
 
-    saveJournalEntries(updatedEntries);
-
-    setJournalEntries(updatedEntries);
+    persistJournalEntries(updatedEntries);
     setUpdatingCaseUrl(null);
   }
 
@@ -163,9 +165,7 @@ export default function QuickCaptureForm() {
       };
     });
 
-    saveJournalEntries(updatedEntries);
-
-    setJournalEntries(updatedEntries);
+    persistJournalEntries(updatedEntries);
     setEditingNextStepId(null);
   }
 
@@ -178,8 +178,7 @@ export default function QuickCaptureForm() {
       return existingEntry.id !== entryId;
     });
 
-    saveJournalEntries(remainingEntries);
-    setJournalEntries(remainingEntries);
+    persistJournalEntries(remainingEntries);
   }
 
   function handleEditSubmit(
@@ -220,9 +219,8 @@ export default function QuickCaptureForm() {
         body: cleanBody,
       };
     });
-    saveJournalEntries(updatedEntries);
 
-    setJournalEntries(updatedEntries);
+    persistJournalEntries(updatedEntries);
     setEditingEntryId(null);
   }
 
@@ -289,9 +287,7 @@ export default function QuickCaptureForm() {
       const mergedEntries = Array.from(entriesById.values()).sort((a, b) => {
         return a.createdAt.localeCompare(b.createdAt);
       });
-      saveJournalEntries(mergedEntries);
-
-      setJournalEntries(mergedEntries);
+      persistJournalEntries(mergedEntries);
       window.alert(`Imported ${backup.entries.length} journal entries.`);
     } catch {
       window.alert("This is not a valid Maintainer's Journal backup file.");
