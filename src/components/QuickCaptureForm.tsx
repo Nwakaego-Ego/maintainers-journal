@@ -9,6 +9,7 @@ import {
   saveJournalEntries,
   type JournalEntry,
 } from "../lib/journalStorage";
+import JournalCaseCard from "./JournalCaseCard";
 
 export default function QuickCaptureForm() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
@@ -323,7 +324,9 @@ export default function QuickCaptureForm() {
         id="journal-search"
         type="search"
         value={searchTerm}
-        onChange={(event) => setSearchTerm(event.currentTarget.value)}
+        onChange={(event) => {
+          setSearchTerm(event.currentTarget.value);
+        }}
         placeholder="Search by title, URL, notes, or next step"
       />
 
@@ -364,194 +367,36 @@ export default function QuickCaptureForm() {
 
       <ul>
         {visibleCases.map((journalCase) => {
-          const latestNextStepEntry = [...journalCase.entries]
-            .reverse()
-            .find((entry) => entry.nextStep?.trim());
-
-          const currentNextStep = latestNextStepEntry?.nextStep;
-
           return (
-            <li key={journalCase.githubUrl}>
-              <a
-                href={journalCase.githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {journalCase.githubUrl}
-              </a>
-
-              {currentNextStep && latestNextStepEntry && (
-                <>
-                  <p>
-                    <strong>Next step:</strong> {currentNextStep}
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingNextStepId(latestNextStepEntry.id);
-                    }}
-                  >
-                    Edit next step
-                  </button>
-
-                  {editingNextStepId === latestNextStepEntry.id && (
-                    <form
-                      onSubmit={(event) => {
-                        handleNextStepEditSubmit(event, latestNextStepEntry.id);
-                      }}
-                    >
-                      <label>
-                        Next step
-                        <input
-                          type="text"
-                          name="nextStep"
-                          defaultValue={currentNextStep}
-                        />
-                      </label>
-
-                      <button type="submit">Save next step</button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingNextStepId(null);
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </form>
-                  )}
-                </>
-              )}
-
-              <p>
-                {journalCase.entries.length}{" "}
-                {journalCase.entries.length === 1
-                  ? "journal entry"
-                  : "journal entries"}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setUpdatingCaseUrl(journalCase.githubUrl);
-                }}
-              >
-                Add update
-              </button>
-
-              {updatingCaseUrl === journalCase.githubUrl && (
-                <form
-                  onSubmit={(event) => {
-                    handleAddUpdate(event, journalCase.githubUrl);
-                  }}
-                >
-                  <label>
-                    Title
-                    <input type="text" name="title" />
-                  </label>
-
-                  <label>
-                    Notes
-                    <textarea name="body" />
-                  </label>
-
-                  <label>
-                    Next step
-                    <input type="text" name="nextStep" />
-                  </label>
-
-                  <button type="submit">Save update</button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUpdatingCaseUrl(null);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </form>
-              )}
-
-              <ol>
-                {journalCase.entries.map((entry) => {
-                  return (
-                    <li key={entry.id}>
-                      <p>{new Date(entry.createdAt).toLocaleString()}</p>
-
-                      {entry.title && <p>{entry.title}</p>}
-
-                      {entry.body && (
-                        <p className="journal-entry-body">{entry.body}</p>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingEntryId(entry.id);
-                        }}
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleDelete(entry.id);
-                        }}
-                      >
-                        Delete
-                      </button>
-
-                      {editingEntryId === entry.id && (
-                        <form
-                          onSubmit={(event) => {
-                            handleEditSubmit(event, entry.id);
-                          }}
-                        >
-                          <label>
-                            GitHub URL
-                            <input
-                              type="url"
-                              name="githubUrl"
-                              defaultValue={entry.githubUrl}
-                              required
-                            />
-                          </label>
-
-                          <label>
-                            Title
-                            <input
-                              type="text"
-                              name="title"
-                              defaultValue={entry.title}
-                            />
-                          </label>
-
-                          <label>
-                            Notes
-                            <textarea name="body" defaultValue={entry.body} />
-                          </label>
-
-                          <button type="submit">Save changes</button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingEntryId(null);
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        </form>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            </li>
+            <JournalCaseCard
+              key={journalCase.githubUrl}
+              journalCase={journalCase}
+              editingEntryId={editingEntryId}
+              updatingCaseUrl={updatingCaseUrl}
+              editingNextStepId={editingNextStepId}
+              onStartEditingEntry={(entryId) => {
+                setEditingEntryId(entryId);
+              }}
+              onCancelEditingEntry={() => {
+                setEditingEntryId(null);
+              }}
+              onStartAddingUpdate={(githubUrl) => {
+                setUpdatingCaseUrl(githubUrl);
+              }}
+              onCancelAddingUpdate={() => {
+                setUpdatingCaseUrl(null);
+              }}
+              onStartEditingNextStep={(entryId) => {
+                setEditingNextStepId(entryId);
+              }}
+              onCancelEditingNextStep={() => {
+                setEditingNextStepId(null);
+              }}
+              onAddUpdate={handleAddUpdate}
+              onEditNextStep={handleNextStepEditSubmit}
+              onEditEntry={handleEditSubmit}
+              onDeleteEntry={handleDelete}
+            />
           );
         })}
       </ul>
