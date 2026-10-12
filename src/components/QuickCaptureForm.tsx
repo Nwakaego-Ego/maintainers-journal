@@ -2,31 +2,12 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useState, useEffect } from "react";
-
-type JournalEntry = {
-  id: string;
-  githubUrl: string;
-  createdAt: string;
-  title?: string;
-  body?: string;
-  nextStep?: string;
-};
-function isJournalEntry(value: unknown): value is JournalEntry {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const entry = value as Partial<JournalEntry>;
-
-  return (
-    typeof entry.id === "string" &&
-    typeof entry.githubUrl === "string" &&
-    typeof entry.createdAt === "string" &&
-    (entry.title === undefined || typeof entry.title === "string") &&
-    (entry.body === undefined || typeof entry.body === "string") &&
-    (entry.nextStep === undefined || typeof entry.nextStep === "string")
-  );
-}
+import {
+  isJournalEntry,
+  loadJournalEntries,
+  saveJournalEntries,
+  type JournalEntry,
+} from "../lib/journalStorage";
 
 type JournalCase = {
   githubUrl: string;
@@ -61,14 +42,8 @@ export default function QuickCaptureForm() {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    const storedEntries = localStorage.getItem("maintainersJournalEntries");
+    const entries = loadJournalEntries();
 
-    let entries: JournalEntry[];
-    if (storedEntries === null) {
-      entries = [];
-    } else {
-      entries = JSON.parse(storedEntries);
-    }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore browser-only localStorage after hydration.
     setJournalEntries(entries);
   }, []);
@@ -110,15 +85,7 @@ export default function QuickCaptureForm() {
       nextStep: cleanNextStep,
     };
 
-    const storedEntries = localStorage.getItem("maintainersJournalEntries");
-
-    let entries: JournalEntry[];
-    if (storedEntries === null) {
-      entries = [];
-    } else {
-      entries = JSON.parse(storedEntries);
-    }
-
+    const entries = loadJournalEntries();
     const matchingEntries = entries.filter(
       (existingEntry) => existingEntry.githubUrl === githubUrl,
     );
@@ -127,8 +94,7 @@ export default function QuickCaptureForm() {
 
     entries.push(entry);
 
-    const serializedEntries = JSON.stringify(entries);
-    localStorage.setItem("maintainersJournalEntries", serializedEntries);
+    saveJournalEntries(entries);
     setJournalEntries(entries);
     event.currentTarget.reset();
   }
@@ -167,10 +133,7 @@ export default function QuickCaptureForm() {
 
     const updatedEntries = [...journalEntries, newEntry];
 
-    localStorage.setItem(
-      "maintainersJournalEntries",
-      JSON.stringify(updatedEntries),
-    );
+    saveJournalEntries(updatedEntries);
 
     setJournalEntries(updatedEntries);
     setUpdatingCaseUrl(null);
@@ -200,10 +163,7 @@ export default function QuickCaptureForm() {
       };
     });
 
-    localStorage.setItem(
-      "maintainersJournalEntries",
-      JSON.stringify(updatedEntries),
-    );
+    saveJournalEntries(updatedEntries);
 
     setJournalEntries(updatedEntries);
     setEditingNextStepId(null);
@@ -218,8 +178,7 @@ export default function QuickCaptureForm() {
       return existingEntry.id !== entryId;
     });
 
-    const serializedEntries = JSON.stringify(remainingEntries);
-    localStorage.setItem("maintainersJournalEntries", serializedEntries);
+    saveJournalEntries(remainingEntries);
     setJournalEntries(remainingEntries);
   }
 
@@ -261,10 +220,7 @@ export default function QuickCaptureForm() {
         body: cleanBody,
       };
     });
-    localStorage.setItem(
-      "maintainersJournalEntries",
-      JSON.stringify(updatedEntries),
-    );
+    saveJournalEntries(updatedEntries);
 
     setJournalEntries(updatedEntries);
     setEditingEntryId(null);
@@ -333,11 +289,7 @@ export default function QuickCaptureForm() {
       const mergedEntries = Array.from(entriesById.values()).sort((a, b) => {
         return a.createdAt.localeCompare(b.createdAt);
       });
-
-      localStorage.setItem(
-        "maintainersJournalEntries",
-        JSON.stringify(mergedEntries),
-      );
+      saveJournalEntries(mergedEntries);
 
       setJournalEntries(mergedEntries);
       window.alert(`Imported ${backup.entries.length} journal entries.`);
@@ -538,11 +490,6 @@ export default function QuickCaptureForm() {
                       {entry.body && (
                         <p className="journal-entry-body">{entry.body}</p>
                       )}
-                      {/* {entry.nextStep && (
-                        <p>
-                          <strong>Next step:</strong> {entry.nextStep}
-                        </p>
-                      )} */}
                       <button
                         type="button"
                         onClick={() => {
@@ -590,15 +537,6 @@ export default function QuickCaptureForm() {
                             Notes
                             <textarea name="body" defaultValue={entry.body} />
                           </label>
-
-                          {/* <label>
-                            Next step
-                            <input
-                              type="text"
-                              name="nextStep"
-                              defaultValue={entry.nextStep}
-                            />
-                          </label> */}
 
                           <button type="submit">Save changes</button>
 
