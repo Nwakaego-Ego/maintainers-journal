@@ -9,6 +9,7 @@ type JournalEntry = {
   createdAt: string;
   title?: string;
   body?: string;
+  nextStep?: string;
 };
 
 type JournalCase = {
@@ -73,12 +74,21 @@ export default function QuickCaptureForm() {
     }
     const cleanBody = body.trim();
 
+    const nextStep = formData.get("nextStep");
+
+    if (typeof nextStep !== "string") {
+      return;
+    }
+
+    const cleanNextStep = nextStep.trim();
+
     const entry: JournalEntry = {
       id: crypto.randomUUID(),
       githubUrl,
       createdAt: new Date().toISOString(),
       title: cleanTitle,
       body: cleanBody,
+      nextStep: cleanNextStep,
     };
 
     const storedEntries = localStorage.getItem("maintainersJournalEntries");
@@ -122,12 +132,18 @@ export default function QuickCaptureForm() {
       return;
     }
 
+    const nextStep = formData.get("nextStep");
+    if (typeof nextStep !== "string") {
+      return;
+    }
+
     const newEntry: JournalEntry = {
       id: crypto.randomUUID(),
       githubUrl,
       createdAt: new Date().toISOString(),
       title: title.trim(),
       body: body.trim(),
+      nextStep: nextStep.trim(),
     };
 
     const updatedEntries = [...journalEntries, newEntry];
@@ -181,6 +197,13 @@ export default function QuickCaptureForm() {
     }
     const cleanBody = body.trim();
 
+    const nextStep = formData.get("nextStep");
+    if (typeof nextStep !== "string") {
+      return;
+    }
+
+    const cleanNextStep = nextStep.trim();
+
     const updatedEntries = journalEntries.map((existingEntry) => {
       if (existingEntry.id !== entryId) {
         return existingEntry;
@@ -191,6 +214,7 @@ export default function QuickCaptureForm() {
         githubUrl,
         title: cleanTitle,
         body: cleanBody,
+        nextStep: cleanNextStep,
       };
     });
     localStorage.setItem(
@@ -208,7 +232,12 @@ export default function QuickCaptureForm() {
   const visibleCases = journalCases.filter((journalCase) => {
     const searchableText = journalCase.entries
       .map((entry) => {
-        return [entry.githubUrl, entry.title ?? "", entry.body ?? ""].join(" ");
+        return [
+          entry.githubUrl,
+          entry.title ?? "",
+          entry.body ?? "",
+          entry.nextStep ?? "",
+        ].join(" ");
       })
       .join(" ")
       .toLowerCase();
@@ -225,6 +254,8 @@ export default function QuickCaptureForm() {
         <input name="title" id="title" type="text" />
         <label htmlFor="body">Notes</label>
         <textarea id="body" name="body" rows={6} />
+        <label htmlFor="next-step">Next step</label>
+        <input id="next-step" type="text" name="nextStep" />
         <button type="submit">Submit</button>
       </form>
       <label htmlFor="journal-search">Search saved entries</label>
@@ -233,7 +264,7 @@ export default function QuickCaptureForm() {
         type="search"
         value={searchTerm}
         onChange={(event) => setSearchTerm(event.currentTarget.value)}
-        placeholder="Search by title, URL, or notes"
+        placeholder="Search by title, URL, notes, or next step"
       />
       {previousMatchCount > 0 && (
         <p role="status">
@@ -293,6 +324,11 @@ export default function QuickCaptureForm() {
                     <textarea name="body" />
                   </label>
 
+                  <label>
+                    Next step
+                    <input type="text" name="nextStep" />
+                  </label>
+
                   <button type="submit">Save update</button>
 
                   <button
@@ -316,7 +352,11 @@ export default function QuickCaptureForm() {
                       {entry.body && (
                         <p className="journal-entry-body">{entry.body}</p>
                       )}
-
+                      {entry.nextStep && (
+                        <p>
+                          <strong>Next step:</strong> {entry.nextStep}
+                        </p>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
@@ -363,6 +403,15 @@ export default function QuickCaptureForm() {
                           <label>
                             Notes
                             <textarea name="body" defaultValue={entry.body} />
+                          </label>
+
+                          <label>
+                            Next step
+                            <input
+                              type="text"
+                              name="nextStep"
+                              defaultValue={entry.nextStep}
+                            />
                           </label>
 
                           <button type="submit">Save changes</button>
