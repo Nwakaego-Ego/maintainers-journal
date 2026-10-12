@@ -39,6 +39,9 @@ export default function QuickCaptureForm() {
   const [previousMatchCount, setPreviousMatchCount] = useState(0);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [updatingCaseUrl, setUpdatingCaseUrl] = useState<string | null>(null);
+  const [editingNextStepId, setEditingNextStepId] = useState<string | null>(
+    null,
+  );
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -157,6 +160,39 @@ export default function QuickCaptureForm() {
     setUpdatingCaseUrl(null);
   }
 
+  function handleNextStepEditSubmit(
+    event: FormEvent<HTMLFormElement>,
+    entryId: string,
+  ) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const nextStep = formData.get("nextStep");
+
+    if (typeof nextStep !== "string") {
+      return;
+    }
+
+    const updatedEntries = journalEntries.map((existingEntry) => {
+      if (existingEntry.id !== entryId) {
+        return existingEntry;
+      }
+
+      return {
+        ...existingEntry,
+        nextStep: nextStep.trim(),
+      };
+    });
+
+    localStorage.setItem(
+      "maintainersJournalEntries",
+      JSON.stringify(updatedEntries),
+    );
+
+    setJournalEntries(updatedEntries);
+    setEditingNextStepId(null);
+  }
+
   function handleDelete(entryId: string) {
     const shouldDelete = window.confirm("Delete this journal entry?");
     if (!shouldDelete) {
@@ -197,12 +233,12 @@ export default function QuickCaptureForm() {
     }
     const cleanBody = body.trim();
 
-    const nextStep = formData.get("nextStep");
-    if (typeof nextStep !== "string") {
-      return;
-    }
+    // const nextStep = formData.get("nextStep");
+    // if (typeof nextStep !== "string") {
+    //   return;
+    // }
 
-    const cleanNextStep = nextStep.trim();
+    // const cleanNextStep = nextStep.trim();
 
     const updatedEntries = journalEntries.map((existingEntry) => {
       if (existingEntry.id !== entryId) {
@@ -214,7 +250,7 @@ export default function QuickCaptureForm() {
         githubUrl,
         title: cleanTitle,
         body: cleanBody,
-        nextStep: cleanNextStep,
+        // nextStep: cleanNextStep,
       };
     });
     localStorage.setItem(
@@ -283,6 +319,11 @@ export default function QuickCaptureForm() {
       )}
       <ul>
         {visibleCases.map((journalCase) => {
+          const latestNextStepEntry = [...journalCase.entries]
+            .reverse()
+            .find((entry) => entry.nextStep?.trim());
+
+          const currentNextStep = latestNextStepEntry?.nextStep;
           return (
             <li key={journalCase.githubUrl}>
               <a
@@ -292,7 +333,56 @@ export default function QuickCaptureForm() {
               >
                 {journalCase.githubUrl}
               </a>
+              {/* {currentNextStep && (
+                <p>
+                  <strong>Next step:</strong> {currentNextStep}
+                </p>
+              )} */}
 
+              {currentNextStep && latestNextStepEntry && (
+                <>
+                  <p>
+                    <strong>Next step:</strong> {currentNextStep}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingNextStepId(latestNextStepEntry.id);
+                    }}
+                  >
+                    Edit next step
+                  </button>
+
+                  {editingNextStepId === latestNextStepEntry.id && (
+                    <form
+                      onSubmit={(event) => {
+                        handleNextStepEditSubmit(event, latestNextStepEntry.id);
+                      }}
+                    >
+                      <label>
+                        Next step
+                        <input
+                          type="text"
+                          name="nextStep"
+                          defaultValue={currentNextStep}
+                        />
+                      </label>
+
+                      <button type="submit">Save next step</button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingNextStepId(null);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  )}
+                </>
+              )}
               <p>
                 {journalCase.entries.length}{" "}
                 {journalCase.entries.length === 1
@@ -352,11 +442,11 @@ export default function QuickCaptureForm() {
                       {entry.body && (
                         <p className="journal-entry-body">{entry.body}</p>
                       )}
-                      {entry.nextStep && (
+                      {/* {entry.nextStep && (
                         <p>
                           <strong>Next step:</strong> {entry.nextStep}
                         </p>
-                      )}
+                      )} */}
                       <button
                         type="button"
                         onClick={() => {
@@ -405,14 +495,14 @@ export default function QuickCaptureForm() {
                             <textarea name="body" defaultValue={entry.body} />
                           </label>
 
-                          <label>
+                          {/* <label>
                             Next step
                             <input
                               type="text"
                               name="nextStep"
                               defaultValue={entry.nextStep}
                             />
-                          </label>
+                          </label> */}
 
                           <button type="submit">Save changes</button>
 
