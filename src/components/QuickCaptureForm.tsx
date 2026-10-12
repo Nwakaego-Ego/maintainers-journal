@@ -37,6 +37,7 @@ export default function QuickCaptureForm() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [previousMatchCount, setPreviousMatchCount] = useState(0);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [updatingCaseUrl, setUpdatingCaseUrl] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -101,6 +102,43 @@ export default function QuickCaptureForm() {
     localStorage.setItem("maintainersJournalEntries", serializedEntries);
     setJournalEntries(entries);
     event.currentTarget.reset();
+  }
+
+  function handleAddUpdate(
+    event: FormEvent<HTMLFormElement>,
+    githubUrl: string,
+  ) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+
+    const title = formData.get("title");
+    if (typeof title !== "string") {
+      return;
+    }
+
+    const body = formData.get("body");
+    if (typeof body !== "string") {
+      return;
+    }
+
+    const newEntry: JournalEntry = {
+      id: crypto.randomUUID(),
+      githubUrl,
+      createdAt: new Date().toISOString(),
+      title: title.trim(),
+      body: body.trim(),
+    };
+
+    const updatedEntries = [...journalEntries, newEntry];
+
+    localStorage.setItem(
+      "maintainersJournalEntries",
+      JSON.stringify(updatedEntries),
+    );
+
+    setJournalEntries(updatedEntries);
+    setUpdatingCaseUrl(null);
   }
 
   function handleDelete(entryId: string) {
@@ -230,7 +268,43 @@ export default function QuickCaptureForm() {
                   ? "journal entry"
                   : "journal entries"}
               </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setUpdatingCaseUrl(journalCase.githubUrl);
+                }}
+              >
+                Add update
+              </button>
 
+              {updatingCaseUrl === journalCase.githubUrl && (
+                <form
+                  onSubmit={(event) => {
+                    handleAddUpdate(event, journalCase.githubUrl);
+                  }}
+                >
+                  <label>
+                    Title
+                    <input type="text" name="title" />
+                  </label>
+
+                  <label>
+                    Notes
+                    <textarea name="body" />
+                  </label>
+
+                  <button type="submit">Save update</button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUpdatingCaseUrl(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </form>
+              )}
               <ol>
                 {journalCase.entries.map((entry) => {
                   return (
