@@ -11,6 +11,28 @@ type JournalEntry = {
   body?: string;
 };
 
+type JournalCase = {
+  githubUrl: string;
+  entries: JournalEntry[];
+};
+
+function groupEntriesByUrl(entries: JournalEntry[]): JournalCase[] {
+  const casesByUrl = new Map<string, JournalEntry[]>();
+
+  for (const entry of entries) {
+    const existingEntries = casesByUrl.get(entry.githubUrl) ?? [];
+
+    casesByUrl.set(entry.githubUrl, [...existingEntries, entry]);
+  }
+
+  return Array.from(casesByUrl, ([githubUrl, caseEntries]) => {
+    return {
+      githubUrl,
+      entries: caseEntries,
+    };
+  });
+}
+
 export default function QuickCaptureForm() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [previousMatchCount, setPreviousMatchCount] = useState(0);
@@ -143,13 +165,13 @@ export default function QuickCaptureForm() {
   }
 
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const journalCases = groupEntriesByUrl(journalEntries);
 
-  const visibleEntries = journalEntries.filter((entry) => {
-    const searchableText = [
-      entry.githubUrl,
-      entry.title ?? "",
-      entry.body ?? "",
-    ]
+  const visibleCases = journalCases.filter((journalCase) => {
+    const searchableText = journalCase.entries
+      .map((entry) => {
+        return [entry.githubUrl, entry.title ?? "", entry.body ?? ""].join(" ");
+      })
       .join(" ")
       .toLowerCase();
 
@@ -181,72 +203,108 @@ export default function QuickCaptureForm() {
           entry was still saved.
         </p>
       )}
-      <p>Saved {journalEntries.length}</p>
-      {normalizedSearchTerm && visibleEntries.length === 0 && (
+      <p>
+        Saved {journalCases.length}{" "}
+        {journalCases.length === 1 ? "case" : "cases"} containing{" "}
+        {journalEntries.length}{" "}
+        {journalEntries.length === 1 ? "entry" : "entries"}
+      </p>
+      {normalizedSearchTerm && visibleCases.length === 0 && (
         <p role="status">No saved entries match “{searchTerm.trim()}”.</p>
       )}
       <ul>
-        {visibleEntries.map((entry) => {
+        {visibleCases.map((journalCase) => {
           return (
-            <li key={entry.id}>
+            <li key={journalCase.githubUrl}>
               <a
-                href={entry.githubUrl}
+                href={journalCase.githubUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {entry.title || entry.githubUrl}
+                {journalCase.githubUrl}
               </a>
-              <p>{new Date(entry.createdAt).toLocaleString()}</p>
-              {entry.body && <p className="journal-entry-body">{entry.body}</p>}
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingEntryId(entry.id);
-                }}
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  handleDelete(entry.id);
-                }}
-              >
-                Delete
-              </button>
-              {editingEntryId === entry.id && (
-                <form onSubmit={(event) => handleEditSubmit(event, entry.id)}>
-                  <label>
-                    GitHub URL
-                    <input
-                      type="url"
-                      name="githubUrl"
-                      defaultValue={entry.githubUrl}
-                      required
-                    />
-                  </label>
 
-                  <label>
-                    Title
-                    <input
-                      type="text"
-                      name="title"
-                      defaultValue={entry.title}
-                    />
-                  </label>
+              <p>
+                {journalCase.entries.length}{" "}
+                {journalCase.entries.length === 1
+                  ? "journal entry"
+                  : "journal entries"}
+              </p>
 
-                  <label>
-                    Notes
-                    <textarea name="body" defaultValue={entry.body} />
-                  </label>
+              <ol>
+                {journalCase.entries.map((entry) => {
+                  return (
+                    <li key={entry.id}>
+                      <p>{new Date(entry.createdAt).toLocaleString()}</p>
 
-                  <button type="submit">Save changes</button>
+                      {entry.title && <p>{entry.title}</p>}
 
-                  <button type="button" onClick={() => setEditingEntryId(null)}>
-                    Cancel
-                  </button>
-                </form>
-              )}
+                      {entry.body && (
+                        <p className="journal-entry-body">{entry.body}</p>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingEntryId(entry.id);
+                        }}
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleDelete(entry.id);
+                        }}
+                      >
+                        Delete
+                      </button>
+
+                      {editingEntryId === entry.id && (
+                        <form
+                          onSubmit={(event) =>
+                            handleEditSubmit(event, entry.id)
+                          }
+                        >
+                          <label>
+                            GitHub URL
+                            <input
+                              type="url"
+                              name="githubUrl"
+                              defaultValue={entry.githubUrl}
+                              required
+                            />
+                          </label>
+
+                          <label>
+                            Title
+                            <input
+                              type="text"
+                              name="title"
+                              defaultValue={entry.title}
+                            />
+                          </label>
+
+                          <label>
+                            Notes
+                            <textarea name="body" defaultValue={entry.body} />
+                          </label>
+
+                          <button type="submit">Save changes</button>
+
+                          <button
+                            type="button"
+                            onClick={() => setEditingEntryId(null)}
+                          >
+                            Cancel
+                          </button>
+                        </form>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
             </li>
           );
         })}
