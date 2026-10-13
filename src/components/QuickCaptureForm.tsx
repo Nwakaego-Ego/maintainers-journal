@@ -90,7 +90,6 @@ export default function QuickCaptureForm() {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
-
     const title = formData.get("title");
 
     if (typeof title !== "string") {
@@ -150,6 +149,21 @@ export default function QuickCaptureForm() {
 
     persistJournalEntries(updatedEntries);
     setEditingNextStepId(null);
+  }
+
+  function handleUpdateEntryBody(entryId: string, body: string) {
+    const updatedEntries = journalEntries.map((existingEntry) => {
+      if (existingEntry.id !== entryId) {
+        return existingEntry;
+      }
+
+      return {
+        ...existingEntry,
+        body,
+      };
+    });
+
+    persistJournalEntries(updatedEntries);
   }
 
   function handleDelete(entryId: string) {
@@ -302,104 +316,162 @@ export default function QuickCaptureForm() {
   });
 
   return (
-    <>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="github-url">GitHub URL</label>
-        <input id="github-url" type="url" name="githubUrl" required={true} />
+    <div className="journal-layout">
+      <aside className="capture-panel">
+        <div className="capture-panel-header">
+          <p className="panel-kicker">Quick capture</p>
+          <h2>Capture context</h2>
+          <p>Save the details you will need when you return to this work.</p>
+        </div>
 
-        <label htmlFor="title">Title</label>
-        <input name="title" id="title" type="text" />
-
-        <label htmlFor="body">Notes</label>
-        <textarea id="body" name="body" rows={6} />
-
-        <label htmlFor="next-step">Next step</label>
-        <input id="next-step" type="text" name="nextStep" />
-
-        <button type="submit">Submit</button>
-      </form>
-
-      <label htmlFor="journal-search">Search saved entries</label>
-      <input
-        id="journal-search"
-        type="search"
-        value={searchTerm}
-        onChange={(event) => {
-          setSearchTerm(event.currentTarget.value);
-        }}
-        placeholder="Search by title, URL, notes, or next step"
-      />
-
-      {previousMatchCount > 0 && (
-        <p role="status">
-          Earlier entries found for this URL: {previousMatchCount}. The new
-          entry was still saved.
-        </p>
-      )}
-
-      <p>
-        Saved {journalCases.length}{" "}
-        {journalCases.length === 1 ? "case" : "cases"} containing{" "}
-        {journalEntries.length}{" "}
-        {journalEntries.length === 1 ? "entry" : "entries"}
-      </p>
-
-      <button
-        type="button"
-        onClick={handleExport}
-        disabled={journalEntries.length === 0}
-      >
-        Export backup
-      </button>
-
-      <label>
-        Import backup
-        <input
-          type="file"
-          accept=".json,application/json"
-          onChange={handleImport}
-        />
-      </label>
-
-      {normalizedSearchTerm && visibleCases.length === 0 && (
-        <p role="status">No saved entries match “{searchTerm.trim()}”.</p>
-      )}
-
-      <ul>
-        {visibleCases.map((journalCase) => {
-          return (
-            <JournalCaseCard
-              key={journalCase.githubUrl}
-              journalCase={journalCase}
-              editingEntryId={editingEntryId}
-              updatingCaseUrl={updatingCaseUrl}
-              editingNextStepId={editingNextStepId}
-              onStartEditingEntry={(entryId) => {
-                setEditingEntryId(entryId);
-              }}
-              onCancelEditingEntry={() => {
-                setEditingEntryId(null);
-              }}
-              onStartAddingUpdate={(githubUrl) => {
-                setUpdatingCaseUrl(githubUrl);
-              }}
-              onCancelAddingUpdate={() => {
-                setUpdatingCaseUrl(null);
-              }}
-              onStartEditingNextStep={(entryId) => {
-                setEditingNextStepId(entryId);
-              }}
-              onCancelEditingNextStep={() => {
-                setEditingNextStepId(null);
-              }}
-              onAddUpdate={handleAddUpdate}
-              onEditNextStep={handleNextStepEditSubmit}
-              onEditEntry={handleEditSubmit}
-              onDeleteEntry={handleDelete}
+        <form className="capture-form" onSubmit={handleSubmit}>
+          <div className="form-field">
+            <label htmlFor="github-url">GitHub URL</label>
+            <input
+              className="form-control"
+              id="github-url"
+              type="url"
+              name="githubUrl"
+              placeholder="https://github.com/owner/repo/issues/123"
+              required
             />
-          );
-        })}
-      </ul>
-    </>
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="title">Title</label>
+            <input
+              className="form-control"
+              name="title"
+              id="title"
+              type="text"
+              placeholder="Short, helpful title"
+            />
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="body">Notes</label>
+            <textarea
+              className="form-control"
+              id="body"
+              name="body"
+              rows={6}
+              placeholder="What is the current situation? Record decisions, links, and trade-offs."
+            />
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="next-step">Next step</label>
+            <input
+              className="form-control"
+              id="next-step"
+              type="text"
+              name="nextStep"
+              placeholder="What should happen next?"
+            />
+          </div>
+
+          <button className="primary-button" type="submit">
+            Save entry
+          </button>
+        </form>
+
+        {previousMatchCount > 0 && (
+          <p className="status-message" role="status">
+            Earlier entries found for this URL: {previousMatchCount}. The new
+            entry was still saved.
+          </p>
+        )}
+      </aside>
+
+      <section className="cases-panel" aria-label="Saved case histories">
+        <div className="case-toolbar">
+          <div className="search-field">
+            <label htmlFor="journal-search">Search cases</label>
+            <input
+              className="form-control"
+              id="journal-search"
+              type="search"
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.currentTarget.value);
+              }}
+              placeholder="Search cases, notes, or next steps"
+            />
+          </div>
+
+          <div className="backup-actions">
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={handleExport}
+              disabled={journalEntries.length === 0}
+            >
+              Export backup
+            </button>
+
+            <label className="secondary-button backup-file-button">
+              Restore backup
+              <input
+                className="visually-hidden"
+                type="file"
+                accept=".json,application/json"
+                onChange={handleImport}
+              />
+            </label>
+          </div>
+        </div>
+
+        <p className="journal-summary">
+          <strong>{journalCases.length}</strong>{" "}
+          {journalCases.length === 1 ? "case" : "cases"}
+          <span aria-hidden="true"> · </span>
+          <strong>{journalEntries.length}</strong>{" "}
+          {journalEntries.length === 1 ? "entry" : "entries"}
+        </p>
+
+        {normalizedSearchTerm && visibleCases.length === 0 && (
+          <p className="empty-message" role="status">
+            No saved entries match “{searchTerm.trim()}”.
+          </p>
+        )}
+
+        <ul className="case-list">
+          {visibleCases.map((journalCase) => {
+            return (
+              <JournalCaseCard
+                key={journalCase.githubUrl}
+                journalCase={journalCase}
+                editingEntryId={editingEntryId}
+                updatingCaseUrl={updatingCaseUrl}
+                editingNextStepId={editingNextStepId}
+                onStartEditingEntry={(entryId) => {
+                  setEditingEntryId(entryId);
+                }}
+                onCancelEditingEntry={() => {
+                  setEditingEntryId(null);
+                }}
+                onStartAddingUpdate={(githubUrl) => {
+                  setUpdatingCaseUrl(githubUrl);
+                }}
+                onCancelAddingUpdate={() => {
+                  setUpdatingCaseUrl(null);
+                }}
+                onStartEditingNextStep={(entryId) => {
+                  setEditingNextStepId(entryId);
+                }}
+                onCancelEditingNextStep={() => {
+                  setEditingNextStepId(null);
+                }}
+                onAddUpdate={handleAddUpdate}
+                onEditNextStep={handleNextStepEditSubmit}
+                onEditEntry={handleEditSubmit}
+                onUpdateEntryBody={handleUpdateEntryBody}
+                onDeleteEntry={handleDelete}
+              />
+            );
+          })}
+        </ul>
+      </section>
+    </div>
   );
 }
