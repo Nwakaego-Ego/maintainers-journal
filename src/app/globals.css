@@ -159,38 +159,6 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 640px) {
-  .journal-shell {
-    width: min(100% - 24px, 1440px);
-    padding-top: 20px;
-  }
-
-  .journal-header {
-    align-items: flex-start;
-    padding-bottom: 22px;
-  }
-
-  .brand-mark {
-    width: 44px;
-    height: 44px;
-    flex-basis: 44px;
-    border-radius: 12px;
-    font-size: 15px;
-  }
-
-  .journal-eyebrow {
-    font-size: 10px;
-  }
-
-  .journal-tagline {
-    font-size: 14px;
-  }
-
-  .journal-workspace {
-    padding-top: 24px;
-  }
-}
-
 .journal-layout {
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
@@ -397,38 +365,6 @@ textarea.form-control {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-@media (max-width: 960px) {
-  .journal-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .capture-panel {
-    position: static;
-  }
-}
-
-@media (max-width: 640px) {
-  .capture-panel {
-    padding: 20px;
-    border-radius: 14px;
-  }
-
-  .case-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .backup-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .case-list > li {
-    padding: 16px;
-    border-radius: 14px;
-  }
 }
 
 .case-card {
@@ -674,38 +610,6 @@ textarea.form-control {
 
 .entry-edit-form {
   background: var(--surface);
-}
-
-@media (max-width: 720px) {
-  .case-card-header,
-  .next-step-panel {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .case-card-header > .case-action-button,
-  .next-step-panel > .case-action-button {
-    align-self: flex-start;
-  }
-
-  .history-item {
-    grid-template-columns: 18px minmax(0, 1fr);
-  }
-
-  .history-marker {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-  }
-
-  .history-date {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .history-content {
-    grid-column: 2;
-    grid-row: 2;
-  }
 }
 
 .history-heading-button {
@@ -1038,11 +942,40 @@ textarea.form-control {
   color: #842f2f;
 }
 
+.weekly-journal-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+
+.weekly-journal-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.weekly-journal-form-actions .primary-button,
+.weekly-journal-form-actions .secondary-button {
+  width: auto;
+}
+
+.inline-error-message {
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 @media (max-width: 960px) {
+  .journal-layout,
   .weekly-plan-layout {
     grid-template-columns: 1fr;
   }
 
+  .capture-panel,
   .weekly-plan-editor {
     position: static;
   }
@@ -1066,7 +999,89 @@ textarea.form-control {
   }
 }
 
+@media (max-width: 720px) {
+  .case-card-header,
+  .next-step-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .case-card-header > .case-action-button,
+  .next-step-panel > .case-action-button {
+    align-self: flex-start;
+  }
+
+  .history-item {
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+
+  .history-marker {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .history-date {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .history-content {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
 @media (max-width: 640px) {
+  .journal-shell {
+    width: min(100% - 24px, 1440px);
+    padding-top: 20px;
+  }
+
+  .journal-header {
+    align-items: flex-start;
+    padding-bottom: 22px;
+  }
+
+  .brand-mark {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+
+  .journal-eyebrow {
+    font-size: 10px;
+  }
+
+  .journal-tagline {
+    font-size: 14px;
+  }
+
+  .journal-workspace {
+    padding-top: 24px;
+  }
+
+  .capture-panel {
+    padding: 20px;
+    border-radius: 14px;
+  }
+
+  .case-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .backup-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .case-list > li {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
   .workspace-tabs {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1106,29 +1121,184 @@ textarea.form-control {
   }
 }
 
-.weekly-journal-form {
-  display: grid;
-  gap: 16px;
-  margin-top: 18px;
-  padding: 18px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-subtle);
-}
+@media (min-width: 961px) {
+  .journal-shell {
+    width: min(100% - 48px, 1280px);
+    padding: 14px 0 36px;
+  }
 
-.weekly-journal-form-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
+  .journal-header {
+    gap: 10px;
+    padding: 0 4px 12px;
+  }
 
-.weekly-journal-form-actions .primary-button,
-.weekly-journal-form-actions .secondary-button {
-  width: auto;
-}
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    border-radius: 10px;
+    font-size: 14px;
+  }
 
-.inline-error-message {
-  color: var(--danger);
-  font-size: 13px;
-  line-height: 1.5;
+  .journal-eyebrow {
+    margin-bottom: 1px;
+    font-size: 9px;
+  }
+
+  .journal-header h1 {
+    font-size: clamp(24px, 2.5vw, 30px);
+  }
+
+  .journal-tagline {
+    margin-top: 2px;
+    font-size: 12px;
+  }
+
+  .journal-workspace {
+    padding-top: 16px;
+  }
+
+  .workspace-introduction {
+    margin-bottom: 12px;
+  }
+
+  .workspace-introduction h2 {
+    font-size: 16px;
+  }
+
+  .workspace-introduction p {
+    margin-top: 3px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .workspace-tabs {
+    margin-bottom: 12px;
+    padding: 3px;
+  }
+
+  .workspace-tab {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  .weekly-plan-layout,
+  .journal-layout {
+    grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .weekly-plan-editor,
+  .capture-panel {
+    top: 16px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .weekly-plan-board {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .weekly-plan-heading {
+    gap: 14px;
+    padding-bottom: 12px;
+  }
+
+  .weekly-plan-heading h2 {
+    font-size: clamp(20px, 2vw, 24px);
+  }
+
+  .weekly-plan-actions {
+    gap: 8px;
+  }
+
+  .weekly-progress {
+    margin: 14px 0;
+    padding: 12px 14px;
+  }
+
+  .weekly-empty-state {
+    padding: 36px 18px;
+  }
+
+  .weekly-item {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .weekly-item-title-row h3 {
+    font-size: 14px;
+  }
+
+  .weekly-item-url,
+  .weekly-item-buttons,
+  .weekly-item-type {
+    font-size: 12px;
+  }
+
+  .capture-panel-header {
+    margin-bottom: 14px;
+  }
+
+  .capture-panel-header h2 {
+    font-size: 18px;
+  }
+
+  .capture-form {
+    gap: 11px;
+  }
+
+  .form-control {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  .primary-button,
+  .secondary-button {
+    min-height: 34px;
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+
+  .case-list > li {
+    padding: 14px;
+  }
+
+  .next-step-panel {
+    gap: 14px;
+    margin-top: 14px;
+    padding: 12px 14px;
+  }
+
+  .next-step-text {
+    font-size: 17px;
+  }
+
+  .history-heading {
+    margin-top: 14px;
+  }
+
+  .history-list {
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .history-content {
+    padding: 10px 12px;
+  }
+
+  .history-note-editor {
+    min-height: 84px;
+    padding: 10px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .weekly-journal-form,
+  .inline-form {
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px;
+  }
 }
