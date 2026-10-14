@@ -755,3 +755,380 @@ textarea.form-control {
   color: var(--muted-foreground);
   font-size: 12px;
 }
+
+.workspace-view-shell {
+  width: 100%;
+}
+
+.workspace-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgb(23 32 51 / 5%);
+}
+
+.workspace-tab {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--muted-foreground);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.workspace-tab:hover {
+  color: var(--foreground);
+  background: var(--surface-subtle);
+}
+
+.workspace-tab-active {
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.workspace-tab-active:hover {
+  color: #ffffff;
+  background: var(--primary-hover);
+}
+
+.weekly-plan-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.weekly-plan-editor {
+  position: sticky;
+  top: 24px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.weekly-plan-board {
+  min-width: 0;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.weekly-plan-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.weekly-plan-heading h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.weekly-plan-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.previous-weeks-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.previous-weeks-field .form-control {
+  min-width: 190px;
+  padding: 9px 12px;
+}
+
+.field-help {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.weekly-progress {
+  margin: 24px 0;
+  padding: 16px 18px;
+  border: 1px solid #d8e4d4;
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+
+.weekly-progress-copy {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+.weekly-progress-copy strong {
+  color: var(--accent);
+}
+
+.weekly-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(85 125 86 / 16%);
+}
+
+.weekly-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 220ms ease;
+}
+
+.weekly-empty-state {
+  padding: 64px 24px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 14px;
+  text-align: center;
+  background: var(--surface-subtle);
+}
+
+.weekly-empty-state h3 {
+  font-size: 17px;
+}
+
+.weekly-empty-state p {
+  max-width: 440px;
+  margin: 8px auto 0;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+
+.weekly-item-list {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+}
+
+.weekly-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.weekly-item:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 8px 24px rgb(23 32 51 / 6%);
+}
+
+.weekly-item-completed {
+  background: var(--surface-subtle);
+  opacity: 0.72;
+}
+
+.weekly-item-completed h3 {
+  text-decoration: line-through;
+}
+
+.weekly-item-checkbox {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+}
+
+.weekly-item-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.weekly-item-content {
+  min-width: 0;
+}
+
+.weekly-item-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.weekly-item-title-row h3 {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.weekly-item-type {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.weekly-item-url {
+  display: block;
+  margin-top: 7px;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weekly-item-url:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.weekly-item-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.text-button,
+.danger-text-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.text-button {
+  color: var(--accent);
+}
+
+.text-button:hover {
+  color: var(--foreground);
+}
+
+.danger-text-button {
+  color: var(--danger);
+}
+
+.danger-text-button:hover {
+  color: #842f2f;
+}
+
+@media (max-width: 960px) {
+  .weekly-plan-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .weekly-plan-editor {
+    position: static;
+  }
+
+  .weekly-plan-heading {
+    flex-direction: column;
+  }
+
+  .weekly-plan-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .previous-weeks-field {
+    flex: 1;
+  }
+
+  .previous-weeks-field .form-control {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .workspace-tab {
+    padding-inline: 12px;
+  }
+
+  .weekly-plan-editor,
+  .weekly-plan-board {
+    padding: 20px;
+    border-radius: 14px;
+  }
+
+  .weekly-plan-actions {
+    flex-direction: column;
+  }
+
+  .weekly-plan-actions .secondary-button {
+    width: 100%;
+  }
+
+  .weekly-item-title-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .weekly-item-type {
+    align-self: flex-start;
+  }
+
+  .weekly-item-url {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+.weekly-journal-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+
+.weekly-journal-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.weekly-journal-form-actions .primary-button,
+.weekly-journal-form-actions .secondary-button {
+  width: auto;
+}
+
+.inline-error-message {
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.5;
+}

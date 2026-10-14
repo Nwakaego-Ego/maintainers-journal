@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { JournalCase } from "../lib/journalCases";
 
 type JournalCaseCardProps = {
+  caseElementId: string;
   journalCase: JournalCase;
   editingEntryId: string | null;
   updatingCaseUrl: string | null;
@@ -23,6 +24,7 @@ type JournalCaseCardProps = {
 };
 
 export default function JournalCaseCard({
+  caseElementId,
   journalCase,
   editingEntryId,
   updatingCaseUrl,
@@ -53,7 +55,7 @@ export default function JournalCaseCard({
     : journalCase.entries.slice(-1);
 
   return (
-    <li className="case-card">
+    <li id={caseElementId} className="case-card" tabIndex={-1}>
       <header className="case-card-header">
         <div className="case-identity">
           <span className="case-status-dot" aria-hidden="true" />
