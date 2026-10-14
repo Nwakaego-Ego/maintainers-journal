@@ -19,7 +19,7 @@ export default function Home() {
 
       <section className="journal-workspace" aria-labelledby="workspace-title">
         <div className="workspace-introduction">
-          <h2 id="workspace-title">Case workspace</h2>
+          <h2 id="workspace-title">Journal workspace</h2>
           <p>
             Capture GitHub work, preserve its history, and keep the next action
             visible.

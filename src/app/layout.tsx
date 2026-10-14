@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Maintainer's Journal",
   description:
-    "A private workspace for preserving GitHub case history and next steps.",
+    "A private workspace for preserving GitHub journal history and next steps.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
