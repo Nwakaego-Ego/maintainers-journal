@@ -180,6 +180,14 @@ export default function WeeklyPlanView({
 
   const currentItems = currentPlan?.items ?? [];
 
+  const githubItems = currentItems.filter((item) => {
+    return Boolean(getItemGitHubUrl(item));
+  });
+
+  const standaloneItems = currentItems.filter((item) => {
+    return !getItemGitHubUrl(item);
+  });
+
   const completedCount = currentItems.filter((item) => {
     return item.completed;
   }).length;
@@ -485,6 +493,182 @@ export default function WeeklyPlanView({
     );
   }
 
+  function renderWeeklyItem(item: WeeklyPlanItem, isStandalone = false) {
+    const itemGithubUrl = getItemGitHubUrl(item);
+
+    const journalExists = itemGithubUrl
+      ? journalEntries.some((entry) => {
+          return (
+            getJournalKey(entry.githubUrl) === getJournalKey(itemGithubUrl)
+          );
+        })
+      : false;
+
+    const isStartingJournal = startingJournalItemId === item.id;
+
+    const itemClassName = [
+      "weekly-item",
+      isStandalone ? "weekly-item-standalone" : "",
+      item.completed ? "weekly-item-completed" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    return (
+      <li className={itemClassName} key={item.id}>
+        <label className="weekly-item-checkbox">
+          <input
+            type="checkbox"
+            checked={item.completed}
+            onChange={() => {
+              handleToggleItem(item.id);
+            }}
+          />
+
+          <span className="visually-hidden">
+            Mark {item.title} as completed
+          </span>
+        </label>
+
+        <div className="weekly-item-content">
+          <div className="weekly-item-title-row">
+            <h3>{item.title}</h3>
+
+            <span
+              className={
+                isStandalone
+                  ? "weekly-item-type weekly-item-type-standalone"
+                  : "weekly-item-type"
+              }
+            >
+              {itemGithubUrl ? getGitHubItemLabel(itemGithubUrl) : "Task"}
+            </span>
+          </div>
+
+          {itemGithubUrl && (
+            <a
+              className="weekly-item-url"
+              href={itemGithubUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {itemGithubUrl}
+            </a>
+          )}
+
+          <div className="weekly-item-buttons">
+            {itemGithubUrl && journalExists && (
+              <button
+                className="text-button"
+                type="button"
+                onClick={() => {
+                  onOpenJournal(itemGithubUrl);
+                }}
+              >
+                Open journal
+              </button>
+            )}
+
+            {itemGithubUrl && !journalExists && (
+              <button
+                className="text-button"
+                type="button"
+                aria-expanded={isStartingJournal}
+                onClick={() => {
+                  setJournalFormErrorItemId(null);
+
+                  setStartingJournalItemId(isStartingJournal ? null : item.id);
+                }}
+              >
+                Start journal
+              </button>
+            )}
+
+            <button
+              className="danger-text-button"
+              type="button"
+              onClick={() => {
+                handleDeleteItem(item.id);
+              }}
+            >
+              Remove
+            </button>
+          </div>
+
+          {itemGithubUrl && !journalExists && isStartingJournal && (
+            <form
+              className="weekly-journal-form"
+              onSubmit={(event) => {
+                handleStartJournalSubmit(event, item.id, itemGithubUrl);
+              }}
+            >
+              <div className="form-field">
+                <label htmlFor={`weekly-journal-title-${item.id}`}>Title</label>
+
+                <input
+                  className="form-control"
+                  id={`weekly-journal-title-${item.id}`}
+                  type="text"
+                  name="title"
+                  placeholder="Add a short title"
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor={`weekly-journal-body-${item.id}`}>Notes</label>
+
+                <textarea
+                  className="form-control"
+                  id={`weekly-journal-body-${item.id}`}
+                  name="body"
+                  rows={5}
+                  placeholder="Record the current context, decisions, or research."
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor={`weekly-journal-next-step-${item.id}`}>
+                  Next step
+                </label>
+
+                <input
+                  className="form-control"
+                  id={`weekly-journal-next-step-${item.id}`}
+                  type="text"
+                  name="nextStep"
+                  placeholder="What should happen next?"
+                />
+              </div>
+
+              {journalFormErrorItemId === item.id && (
+                <p className="inline-error-message" role="status">
+                  Add a title, note, or next step before saving the journal.
+                </p>
+              )}
+
+              <div className="weekly-journal-form-actions">
+                <button className="primary-button" type="submit">
+                  Save journal
+                </button>
+
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => {
+                    setStartingJournalItemId(null);
+                    setJournalFormErrorItemId(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </li>
+    );
+  }
+
   return (
     <div className="weekly-plan-layout">
       <aside className="weekly-plan-editor">
@@ -641,192 +825,35 @@ https://github.com/owner/repo/issues/456`}
             <p>Add GitHub URLs or a standalone task using the form.</p>
           </div>
         ) : (
-          <ul className="weekly-item-list">
-            {currentItems.map((item) => {
-              const itemGithubUrl = getItemGitHubUrl(item);
+          <div className="weekly-item-groups">
+            {githubItems.length > 0 && (
+              <ul className="weekly-item-list">
+                {githubItems.map((item) => {
+                  return renderWeeklyItem(item);
+                })}
+              </ul>
+            )}
 
-              const journalExists = itemGithubUrl
-                ? journalEntries.some((entry) => {
-                    return (
-                      getJournalKey(entry.githubUrl) ===
-                      getJournalKey(itemGithubUrl)
-                    );
-                  })
-                : false;
-
-              const isStartingJournal = startingJournalItemId === item.id;
-
-              return (
-                <li
-                  className={
-                    item.completed
-                      ? "weekly-item weekly-item-completed"
-                      : "weekly-item"
-                  }
-                  key={item.id}
+            {standaloneItems.length > 0 && (
+              <section
+                className="standalone-task-section"
+                aria-labelledby="standalone-task-heading"
+              >
+                <h3
+                  className="standalone-task-heading"
+                  id="standalone-task-heading"
                 >
-                  <label className="weekly-item-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={item.completed}
-                      onChange={() => {
-                        handleToggleItem(item.id);
-                      }}
-                    />
+                  Standalone tasks
+                </h3>
 
-                    <span className="visually-hidden">
-                      Mark {item.title} as completed
-                    </span>
-                  </label>
-
-                  <div className="weekly-item-content">
-                    <div className="weekly-item-title-row">
-                      <h3>{item.title}</h3>
-
-                      <span className="weekly-item-type">
-                        {itemGithubUrl
-                          ? getGitHubItemLabel(itemGithubUrl)
-                          : "Task"}
-                      </span>
-                    </div>
-
-                    {itemGithubUrl && (
-                      <a
-                        className="weekly-item-url"
-                        href={itemGithubUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {itemGithubUrl}
-                      </a>
-                    )}
-
-                    <div className="weekly-item-buttons">
-                      {itemGithubUrl && journalExists && (
-                        <button
-                          className="text-button"
-                          type="button"
-                          onClick={() => {
-                            onOpenJournal(itemGithubUrl);
-                          }}
-                        >
-                          Open journal
-                        </button>
-                      )}
-
-                      {itemGithubUrl && !journalExists && (
-                        <button
-                          className="text-button"
-                          type="button"
-                          aria-expanded={isStartingJournal}
-                          onClick={() => {
-                            setJournalFormErrorItemId(null);
-
-                            setStartingJournalItemId(
-                              isStartingJournal ? null : item.id,
-                            );
-                          }}
-                        >
-                          Start journal
-                        </button>
-                      )}
-
-                      <button
-                        className="danger-text-button"
-                        type="button"
-                        onClick={() => {
-                          handleDeleteItem(item.id);
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-
-                    {itemGithubUrl && !journalExists && isStartingJournal && (
-                      <form
-                        className="weekly-journal-form"
-                        onSubmit={(event) => {
-                          handleStartJournalSubmit(
-                            event,
-                            item.id,
-                            itemGithubUrl,
-                          );
-                        }}
-                      >
-                        <div className="form-field">
-                          <label htmlFor={`weekly-journal-title-${item.id}`}>
-                            Title
-                          </label>
-
-                          <input
-                            className="form-control"
-                            id={`weekly-journal-title-${item.id}`}
-                            type="text"
-                            name="title"
-                            placeholder="Add a short title"
-                          />
-                        </div>
-
-                        <div className="form-field">
-                          <label htmlFor={`weekly-journal-body-${item.id}`}>
-                            Notes
-                          </label>
-
-                          <textarea
-                            className="form-control"
-                            id={`weekly-journal-body-${item.id}`}
-                            name="body"
-                            rows={5}
-                            placeholder="Record the current context, decisions, or research."
-                          />
-                        </div>
-
-                        <div className="form-field">
-                          <label
-                            htmlFor={`weekly-journal-next-step-${item.id}`}
-                          >
-                            Next step
-                          </label>
-
-                          <input
-                            className="form-control"
-                            id={`weekly-journal-next-step-${item.id}`}
-                            type="text"
-                            name="nextStep"
-                            placeholder="What should happen next?"
-                          />
-                        </div>
-
-                        {journalFormErrorItemId === item.id && (
-                          <p className="inline-error-message" role="status">
-                            Add a title, note, or next step before saving the
-                            journal.
-                          </p>
-                        )}
-
-                        <div className="weekly-journal-form-actions">
-                          <button className="primary-button" type="submit">
-                            Save journal
-                          </button>
-
-                          <button
-                            className="secondary-button"
-                            type="button"
-                            onClick={() => {
-                              setStartingJournalItemId(null);
-                              setJournalFormErrorItemId(null);
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                <ul className="weekly-item-list standalone-task-list">
+                  {standaloneItems.map((item) => {
+                    return renderWeeklyItem(item, true);
+                  })}
+                </ul>
+              </section>
+            )}
+          </div>
         )}
       </section>
     </div>
