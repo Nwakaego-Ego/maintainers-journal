@@ -9,6 +9,12 @@ import {
   saveJournalEntries,
   type JournalEntry,
 } from "../lib/journalStorage";
+import {
+  isWeeklyPlan,
+  loadWeeklyPlans,
+  saveWeeklyPlans,
+  type WeeklyPlan,
+} from "../lib/weeklyPlanStorage";
 import JournalCaseCard from "./JournalCaseCard";
 import WeeklyPlanView from "./WeeklyPlanView";
 
@@ -20,6 +26,51 @@ type NewJournalDetails = {
   body: string;
   nextStep: string;
 };
+
+type JournalBackupV1 = {
+  version: 1;
+  exportedAt: string;
+  entries: JournalEntry[];
+};
+
+type JournalBackupV2 = {
+  version: 2;
+  exportedAt: string;
+  entries: JournalEntry[];
+  weeklyPlans: WeeklyPlan[];
+};
+
+function isJournalBackupV1(value: unknown): value is JournalBackupV1 {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const backup = value as Partial<JournalBackupV1>;
+
+  return (
+    backup.version === 1 &&
+    typeof backup.exportedAt === "string" &&
+    Array.isArray(backup.entries) &&
+    backup.entries.every(isJournalEntry)
+  );
+}
+
+function isJournalBackupV2(value: unknown): value is JournalBackupV2 {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const backup = value as Partial<JournalBackupV2>;
+
+  return (
+    backup.version === 2 &&
+    typeof backup.exportedAt === "string" &&
+    Array.isArray(backup.entries) &&
+    backup.entries.every(isJournalEntry) &&
+    Array.isArray(backup.weeklyPlans) &&
+    backup.weeklyPlans.every(isWeeklyPlan)
+  );
+}
 
 function normalizeGitHubUrl(githubUrl: string) {
   return githubUrl.trim().replace(/\/+$/, "");
@@ -55,6 +106,40 @@ function getJournalElementId(githubUrl: string) {
   return `journal-${encodeURIComponent(getJournalKey(githubUrl))}`;
 }
 
+function mergeWeeklyPlans(
+  importedPlans: WeeklyPlan[],
+  existingPlans: WeeklyPlan[],
+) {
+  const plansByWeek = new Map(importedPlans.map((plan) => [plan.weekOf, plan]));
+
+  for (const existingPlan of existingPlans) {
+    const importedPlan = plansByWeek.get(existingPlan.weekOf);
+
+    if (!importedPlan) {
+      plansByWeek.set(existingPlan.weekOf, existingPlan);
+      continue;
+    }
+
+    const itemsById = new Map(
+      importedPlan.items.map((item) => [item.id, item]),
+    );
+
+    for (const existingItem of existingPlan.items) {
+      itemsById.set(existingItem.id, existingItem);
+    }
+
+    plansByWeek.set(existingPlan.weekOf, {
+      ...importedPlan,
+      ...existingPlan,
+      items: Array.from(itemsById.values()),
+    });
+  }
+
+  return Array.from(plansByWeek.values()).sort((a, b) => {
+    return a.weekOf.localeCompare(b.weekOf);
+  });
+}
+
 export default function QuickCaptureForm() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [previousMatchCount, setPreviousMatchCount] = useState(0);
@@ -70,6 +155,7 @@ export default function QuickCaptureForm() {
     null,
   );
   const [targetJournalUrl, setTargetJournalUrl] = useState<string | null>(null);
+  const backupMenuRef = useRef<HTMLDetailsElement>(null);
 
   const captureFormRef = useRef<HTMLFormElement>(null);
 
@@ -121,6 +207,12 @@ export default function QuickCaptureForm() {
       window.cancelAnimationFrame(animationFrame);
     };
   }, [activeView, journalToStartUrl, targetJournalUrl]);
+
+  function closeBackupMenu() {
+    if (backupMenuRef.current) {
+      backupMenuRef.current.open = false;
+    }
+  }
 
   function persistJournalEntries(entries: JournalEntry[]) {
     saveJournalEntries(entries);
@@ -373,10 +465,13 @@ export default function QuickCaptureForm() {
   }
 
   function handleExport() {
+    const weeklyPlans = loadWeeklyPlans();
+
     const backup = {
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       entries: journalEntries,
+      weeklyPlans,
     };
 
     const backupText = JSON.stringify(backup, null, 2);
@@ -412,20 +507,21 @@ export default function QuickCaptureForm() {
       const backupText = await backupFile.text();
       const backup: unknown = JSON.parse(backupText);
 
-      if (
-        typeof backup !== "object" ||
-        backup === null ||
-        !("version" in backup) ||
-        backup.version !== 1 ||
-        !("entries" in backup) ||
-        !Array.isArray(backup.entries) ||
-        !backup.entries.every(isJournalEntry)
-      ) {
+      let importedEntries: JournalEntry[];
+      let importedWeeklyPlans: WeeklyPlan[] | null;
+
+      if (isJournalBackupV2(backup)) {
+        importedEntries = backup.entries;
+        importedWeeklyPlans = backup.weeklyPlans;
+      } else if (isJournalBackupV1(backup)) {
+        importedEntries = backup.entries;
+        importedWeeklyPlans = null;
+      } else {
         throw new Error("Invalid backup");
       }
 
       const entriesById = new Map(
-        backup.entries.map((entry) => [entry.id, entry]),
+        importedEntries.map((entry) => [entry.id, entry]),
       );
 
       for (const existingEntry of journalEntries) {
@@ -438,7 +534,20 @@ export default function QuickCaptureForm() {
 
       persistJournalEntries(mergedEntries);
 
-      window.alert(`Imported ${backup.entries.length} journal entries.`);
+      if (importedWeeklyPlans) {
+        const mergedWeeklyPlans = mergeWeeklyPlans(
+          importedWeeklyPlans,
+          loadWeeklyPlans(),
+        );
+
+        saveWeeklyPlans(mergedWeeklyPlans);
+      }
+
+      window.alert(
+        importedWeeklyPlans
+          ? `Imported ${importedEntries.length} journal entries and ${importedWeeklyPlans.length} weekly plans.`
+          : `Imported ${importedEntries.length} journal entries. This older backup did not contain weekly plans.`,
+      );
     } catch {
       window.alert("This is not a valid Maintainer's Journal backup file.");
     } finally {
@@ -631,26 +740,42 @@ export default function QuickCaptureForm() {
                   />
                 </div>
 
-                <div className="backup-actions">
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={handleExport}
-                    disabled={journalEntries.length === 0}
-                  >
-                    Export backup
-                  </button>
+                <details className="backup-menu" ref={backupMenuRef}>
+                  <summary className="secondary-button backup-menu-trigger">
+                    Backup
+                    <span className="backup-menu-chevron" aria-hidden="true">
+                      ▾
+                    </span>
+                  </summary>
+                  <div className="backup-menu-popover">
+                    <button
+                      className="backup-menu-item"
+                      type="button"
+                      onClick={() => {
+                        handleExport();
+                        closeBackupMenu();
+                      }}
+                    >
+                      <strong>Export backup</strong>
+                      <span>Download a JSON copy of your journal.</span>
+                    </button>
 
-                  <label className="secondary-button backup-file-button">
-                    Restore backup
-                    <input
-                      className="visually-hidden"
-                      type="file"
-                      accept=".json,application/json"
-                      onChange={handleImport}
-                    />
-                  </label>
-                </div>
+                    <label className="backup-menu-item">
+                      <strong>Restore backup</strong>
+                      <span>Import entries from a previous backup.</span>
+
+                      <input
+                        className="visually-hidden"
+                        type="file"
+                        accept=".json,application/json"
+                        onChange={async (event) => {
+                          await handleImport(event);
+                          closeBackupMenu();
+                        }}
+                      />
+                    </label>
+                  </div>
+                </details>
               </div>
 
               <p className="journal-summary">

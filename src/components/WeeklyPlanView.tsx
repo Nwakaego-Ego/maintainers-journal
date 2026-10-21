@@ -758,7 +758,7 @@ https://github.com/owner/repo/issues/456`}
               disabled={currentItems.length === 0}
               onClick={handleCarryForward}
             >
-              Carry unfinished forward
+              Add unfinished tasks
             </button>
 
             {previousPlans.length > 0 && (

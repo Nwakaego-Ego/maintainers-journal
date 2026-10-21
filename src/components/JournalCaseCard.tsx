@@ -42,17 +42,39 @@ export default function JournalCaseCard({
   onDeleteEntry,
 }: JournalCaseCardProps) {
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+  const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
-  const latestNextStepEntry = [...journalCase.entries]
-    .reverse()
-    .find((entry) => entry.nextStep?.trim());
+  const entriesNewestFirst = [...journalCase.entries].sort((a, b) => {
+    return b.createdAt.localeCompare(a.createdAt);
+  });
+
+  const latestNextStepEntry = entriesNewestFirst.find((entry) => {
+    return entry.nextStep?.trim();
+  });
 
   const currentNextStep = latestNextStepEntry?.nextStep;
   const hasMultipleEntries = journalCase.entries.length > 1;
+  const earlierEntryCount = Math.max(journalCase.entries.length - 1, 0);
 
   const visibleEntries = isHistoryExpanded
-    ? journalCase.entries
-    : journalCase.entries.slice(-1);
+    ? entriesNewestFirst
+    : entriesNewestFirst.slice(0, 1);
+
+  function setNoteExpanded(entryId: string, shouldExpand: boolean) {
+    setExpandedNoteIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+
+      if (shouldExpand) {
+        nextIds.add(entryId);
+      } else {
+        nextIds.delete(entryId);
+      }
+
+      return nextIds;
+    });
+  }
 
   return (
     <li id={caseElementId} className="case-card" tabIndex={-1}>
@@ -196,7 +218,15 @@ export default function JournalCaseCard({
               setIsHistoryExpanded((currentValue) => !currentValue);
             }}
           >
-            History
+            <span>History</span>
+
+            <span className="history-toggle-label">
+              {isHistoryExpanded
+                ? "Show latest only"
+                : `Show ${earlierEntryCount} earlier ${
+                    earlierEntryCount === 1 ? "update" : "updates"
+                  }`}
+            </span>
           </button>
         ) : (
           <h3>History</h3>
@@ -205,6 +235,20 @@ export default function JournalCaseCard({
 
       <ol className="history-list">
         {visibleEntries.map((entry) => {
+          const noteBody = entry.body ?? "";
+
+          const isLongNote =
+            noteBody.length > 320 || noteBody.split("\n").length > 5;
+
+          const isNoteExpanded = !isLongNote || expandedNoteIds.has(entry.id);
+
+          const noteClassName = [
+            "history-note-editor",
+            isNoteExpanded
+              ? "history-note-editor-expanded"
+              : "history-note-editor-collapsed",
+          ].join(" ");
+
           return (
             <li className="history-item" key={entry.id}>
               <span className="history-marker" aria-hidden="true" />
@@ -219,16 +263,34 @@ export default function JournalCaseCard({
                 )}
 
                 <textarea
-                  className="history-note-editor"
+                  className={noteClassName}
                   aria-label={`Notes for ${entry.title || "journal entry"}`}
-                  value={entry.body ?? ""}
+                  value={noteBody}
                   rows={3}
                   spellCheck
                   placeholder="Add notes for this update..."
+                  onFocus={() => {
+                    if (isLongNote) {
+                      setNoteExpanded(entry.id, true);
+                    }
+                  }}
                   onChange={(event) => {
                     onUpdateEntryBody(entry.id, event.currentTarget.value);
                   }}
                 />
+
+                {isLongNote && (
+                  <button
+                    type="button"
+                    className="note-toggle-button"
+                    aria-expanded={isNoteExpanded}
+                    onClick={() => {
+                      setNoteExpanded(entry.id, !isNoteExpanded);
+                    }}
+                  >
+                    {isNoteExpanded ? "Show less" : "Read full note"}
+                  </button>
+                )}
 
                 <p className="note-save-hint">Saved automatically</p>
 

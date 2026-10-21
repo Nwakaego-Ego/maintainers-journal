@@ -34,7 +34,7 @@ function isWeeklyPlanItem(value: unknown): value is WeeklyPlanItem {
   );
 }
 
-function isWeeklyPlan(value: unknown): value is WeeklyPlan {
+export function isWeeklyPlan(value: unknown): value is WeeklyPlan {
   if (typeof value !== "object" || value === null) {
     return false;
   }

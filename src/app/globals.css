@@ -709,6 +709,10 @@ textarea.form-control {
 }
 
 .history-heading-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   width: 100%;
   padding: 0;
   border: 0;
@@ -716,16 +720,21 @@ textarea.form-control {
   background: transparent;
   font-weight: 700;
   text-align: left;
+  cursor: pointer;
 }
 
 .history-heading-button:hover {
   color: var(--accent);
 }
 
+.history-toggle-label {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .history-note-editor {
   width: 100%;
-  min-height: 120px;
-  max-height: 320px;
   padding: 14px;
   border: 1px solid transparent;
   border-radius: 10px;
@@ -733,7 +742,21 @@ textarea.form-control {
   background: transparent;
   font-size: 15px;
   line-height: 1.7;
-  overflow-y: auto;
+}
+
+.history-note-editor-collapsed {
+  height: 126px;
+  min-height: 126px;
+  max-height: 126px;
+  overflow: hidden;
+  resize: none;
+  field-sizing: fixed;
+}
+
+.history-note-editor-expanded {
+  min-height: 120px;
+  max-height: none;
+  overflow-y: hidden;
   resize: vertical;
   field-sizing: content;
 }
@@ -750,10 +773,39 @@ textarea.form-control {
   outline: none;
 }
 
+.note-toggle-button {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.note-toggle-button:hover {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .note-save-hint {
   margin-top: 6px;
   color: var(--muted-foreground);
   font-size: 12px;
+}
+
+.backup-menu-trigger {
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .history-heading-button {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
 }
 
 .workspace-view-shell {
@@ -1347,5 +1399,91 @@ textarea.form-control {
     gap: 10px;
     margin-top: 12px;
     padding: 12px;
+  }
+}
+
+.backup-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.backup-menu summary {
+  list-style: none;
+}
+
+.backup-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.backup-menu-trigger {
+  gap: 8px;
+}
+
+.backup-menu-chevron {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  transition: transform 160ms ease;
+}
+
+.backup-menu[open] .backup-menu-chevron {
+  transform: rotate(180deg);
+}
+
+.backup-menu-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  width: 260px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 16px 40px rgb(23 32 51 / 14%);
+}
+
+.backup-menu-item {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--foreground);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.backup-menu-item:hover,
+.backup-menu-item:focus-within {
+  background: var(--surface-subtle);
+}
+
+.backup-menu-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.backup-menu-item strong {
+  font-size: 13px;
+}
+
+.backup-menu-item span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .backup-menu,
+  .backup-menu-trigger {
+    width: 100%;
+  }
+
+  .backup-menu-popover {
+    right: auto;
+    left: 0;
+    width: min(100%, 280px);
   }
 }
