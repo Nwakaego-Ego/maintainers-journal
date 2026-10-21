@@ -1487,3 +1487,198 @@ textarea.form-control {
     width: min(100%, 280px);
   }
 }
+
+/* Compact journal card content */
+
+.next-step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.next-step-text {
+  display: block;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-note-editor-collapsed {
+  height: 62px;
+  min-height: 62px;
+  max-height: 62px;
+  overflow: hidden;
+  resize: none;
+}
+
+.history-note-editor-expanded {
+  height: auto;
+  min-height: 150px;
+  max-height: 320px;
+  overflow-y: auto;
+  resize: vertical;
+}
+
+.history-content {
+  padding: 10px 12px;
+}
+
+.case-card-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.next-step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.next-step-text {
+  display: block;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.journal-card-preview {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.journal-card-preview-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.journal-card-preview-heading time {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.journal-card-preview-note {
+  display: -webkit-box;
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@media (max-width: 720px) {
+  .case-card-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .journal-card-preview-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}
+
+/* Final compact journal-card controls */
+
+.next-step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.next-step-text {
+  display: block;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-heading-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  color: var(--foreground);
+  background: transparent;
+  font-weight: 700;
+  text-align: left;
+}
+
+.history-heading-button:hover {
+  color: var(--accent);
+}
+
+.history-toggle-label {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.history-note-editor-collapsed {
+  height: 62px;
+  min-height: 62px;
+  max-height: 62px;
+  overflow: hidden;
+  resize: none;
+  field-sizing: fixed;
+}
+
+.history-note-editor-expanded {
+  height: auto;
+  min-height: 150px;
+  max-height: 320px;
+  overflow-y: auto;
+  resize: vertical;
+  field-sizing: content;
+}
+
+.note-toggle-button {
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.note-toggle-button:hover {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.history-note-editor-collapsed {
+  height: 64px;
+  min-height: 64px;
+  max-height: 64px;
+  padding: 8px 10px;
+  overflow: hidden;
+  resize: none;
+  field-sizing: fixed;
+}
+
+.history-note-editor-expanded {
+  height: auto;
+  min-height: 120px;
+  max-height: none;
+  overflow: hidden;
+  resize: vertical;
+  field-sizing: content;
+}
