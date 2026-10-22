@@ -10,6 +10,7 @@ import {
   type JournalEntry,
 } from "../lib/journalStorage";
 import {
+  getCurrentWeekStart,
   isWeeklyPlan,
   loadWeeklyPlans,
   saveWeeklyPlans,
@@ -150,6 +151,7 @@ export default function QuickCaptureForm() {
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [activeView, setActiveView] = useState<WorkspaceView>("week");
+  const [selectedWeek, setSelectedWeek] = useState(getCurrentWeekStart);
   const [captureGithubUrl, setCaptureGithubUrl] = useState("");
   const [journalToStartUrl, setJournalToStartUrl] = useState<string | null>(
     null,
@@ -626,6 +628,8 @@ export default function QuickCaptureForm() {
         >
           <WeeklyPlanView
             journalEntries={journalEntries}
+            selectedWeek={selectedWeek}
+            onSelectedWeekChange={setSelectedWeek}
             onOpenJournal={handleOpenJournal}
             onCreateJournal={handleCreateJournalFromWeeklyPlan}
           />

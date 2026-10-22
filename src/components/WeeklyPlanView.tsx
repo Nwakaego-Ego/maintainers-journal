@@ -4,13 +4,11 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import type { JournalEntry } from "../lib/journalStorage";
 import {
-  getCurrentWeekStart,
   loadWeeklyPlans,
   saveWeeklyPlans,
   type WeeklyPlan,
   type WeeklyPlanItem,
 } from "../lib/weeklyPlanStorage";
-
 type NewJournalDetails = {
   githubUrl: string;
   title: string;
@@ -20,6 +18,8 @@ type NewJournalDetails = {
 
 type WeeklyPlanViewProps = {
   journalEntries: JournalEntry[];
+  selectedWeek: string;
+  onSelectedWeekChange: (weekOf: string) => void;
   onOpenJournal: (githubUrl: string) => void;
   onCreateJournal: (details: NewJournalDetails) => void;
 };
@@ -152,11 +152,13 @@ function getNextWeek(weekOf: string) {
 
 export default function WeeklyPlanView({
   journalEntries,
+  selectedWeek,
+  onSelectedWeekChange,
   onOpenJournal,
   onCreateJournal,
 }: WeeklyPlanViewProps) {
   const [weeklyPlans, setWeeklyPlans] = useState<WeeklyPlan[]>([]);
-  const [selectedWeek, setSelectedWeek] = useState(getCurrentWeekStart);
+
   const [githubUrlText, setGithubUrlText] = useState("");
   const [standaloneTask, setStandaloneTask] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
@@ -482,7 +484,7 @@ export default function WeeklyPlanView({
     }
 
     persistWeeklyPlans(updatedPlans);
-    setSelectedWeek(nextWeek);
+    onSelectedWeekChange(nextWeek);
     setStartingJournalItemId(null);
     setJournalFormErrorItemId(null);
 
@@ -690,7 +692,7 @@ export default function WeeklyPlanView({
               type="date"
               value={selectedWeek}
               onChange={(event) => {
-                setSelectedWeek(event.currentTarget.value);
+                onSelectedWeekChange(event.currentTarget.value);
                 setStartingJournalItemId(null);
                 setJournalFormErrorItemId(null);
                 setStatusMessage("");
@@ -768,7 +770,7 @@ https://github.com/owner/repo/issues/456`}
                   className="form-control"
                   value={selectedWeek}
                   onChange={(event) => {
-                    setSelectedWeek(event.currentTarget.value);
+                    onSelectedWeekChange(event.currentTarget.value);
                     setStartingJournalItemId(null);
                     setJournalFormErrorItemId(null);
                     setStatusMessage("");
