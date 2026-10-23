@@ -1682,3 +1682,610 @@ textarea.form-control {
   resize: vertical;
   field-sizing: content;
 }
+
+/* ............................................................................
+.................................................................................
+..................................................................................
+.............................................................................
+............................................................................. */
+
+:root {
+  --page-background: #f2eee3;
+  --surface: #f8f5ec;
+  --surface-subtle: #eee9dd;
+  --foreground: #171a1d;
+  --muted-foreground: #61666d;
+  --border: #cbc4b6;
+  --border-strong: #a9a294;
+  --primary: #185b91;
+  --primary-hover: #104a78;
+  --accent: #185b91;
+  --accent-soft: #dce8ef;
+  --warning: #b78625;
+  --danger: #a54132;
+  --focus: #185b91;
+  --journal-rust: #ad4936;
+  --journal-green: #59745b;
+  --journal-blue: #2871ad;
+  --journal-paper: #f8f5ec;
+  --journal-rule: rgb(23 26 29 / 14%);
+  --shadow: none;
+}
+
+html {
+  background: var(--page-background);
+}
+
+body {
+  color: var(--foreground);
+  background-color: var(--page-background);
+  background-image:
+    radial-gradient(
+      circle at 18% 24%,
+      rgb(75 61 42 / 3%) 0 0.8px,
+      transparent 1px
+    ),
+    radial-gradient(
+      circle at 73% 66%,
+      rgb(75 61 42 / 2.5%) 0 0.7px,
+      transparent 1px
+    );
+  background-size:
+    18px 18px,
+    23px 23px;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.journal-shell {
+  width: min(calc(100% - 48px), 1240px);
+}
+
+.journal-header {
+  gap: 14px;
+  padding: 8px 2px 18px;
+  border-bottom: 1px solid #77756f;
+}
+
+.brand-mark {
+  width: 58px;
+  height: 52px;
+  flex-basis: 58px;
+  border: 0;
+  border-right: 1px solid var(--border-strong);
+  border-radius: 0;
+  color: var(--foreground);
+  background: transparent;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: -0.08em;
+}
+
+.journal-eyebrow {
+  color: var(--journal-rust);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+
+.journal-header h1,
+.weekly-plan-heading h2,
+.capture-panel-header h2,
+.workspace-introduction h2,
+.weekly-item-title-row h3,
+.history-title,
+.next-step-text {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.journal-header h1 {
+  font-size: clamp(30px, 3vw, 40px);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+
+.journal-tagline {
+  color: var(--muted-foreground);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.journal-workspace {
+  padding-top: 20px;
+}
+
+.workspace-introduction {
+  position: relative;
+  padding-left: 42px;
+}
+
+.workspace-introduction::before {
+  position: absolute;
+  top: 1px;
+  left: 0;
+  color: var(--journal-rust);
+  content: "04";
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.workspace-introduction h2 {
+  font-size: 19px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.workspace-introduction p {
+  color: var(--muted-foreground);
+}
+
+.workspace-tabs {
+  gap: 0;
+  margin-bottom: 18px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.workspace-tab {
+  min-width: 132px;
+  padding: 10px 18px;
+  border-right: 1px solid var(--border-strong);
+  border-radius: 0;
+  color: var(--foreground);
+  background: rgb(248 245 236 / 55%);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.workspace-tab:last-child {
+  border-right: 0;
+}
+
+.workspace-tab:hover {
+  color: var(--primary);
+  background: var(--surface-subtle);
+}
+
+.workspace-tab-active,
+.workspace-tab-active:hover {
+  color: #fffdf6;
+  background: var(--primary);
+}
+
+.journal-layout,
+.weekly-plan-layout {
+  gap: 20px;
+}
+
+.capture-panel,
+.weekly-plan-editor,
+.weekly-plan-board,
+.case-list > li {
+  border-color: var(--border);
+  border-radius: 2px;
+  background: rgb(248 245 236 / 82%);
+  box-shadow: none;
+}
+
+.capture-panel,
+.weekly-plan-editor {
+  border-top: 2px solid var(--foreground);
+}
+
+.weekly-plan-board {
+  border-top: 2px solid var(--primary);
+}
+
+.capture-panel-header,
+.weekly-plan-heading {
+  border-bottom-color: var(--journal-rule);
+}
+
+.panel-kicker,
+.next-step-label,
+.weekly-item-type,
+.journal-summary,
+.case-entry-count,
+.history-date,
+.field-help {
+  font-family: var(--font-geist-mono), monospace;
+}
+
+.panel-kicker,
+.next-step-label {
+  color: var(--journal-rust);
+}
+
+.capture-panel-header h2,
+.weekly-plan-heading h2 {
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.form-control {
+  border-color: var(--border-strong);
+  border-radius: 2px;
+  color: var(--foreground);
+  background: rgb(248 245 236 / 78%);
+}
+
+.form-control::placeholder {
+  color: #85878a;
+}
+
+.form-control:hover {
+  border-color: #777b7f;
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgb(24 91 145 / 13%);
+}
+
+.primary-button,
+.secondary-button,
+.case-action-button,
+.entry-action-button {
+  border-radius: 2px;
+}
+
+.primary-button {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.primary-button:hover {
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+}
+
+.secondary-button,
+.case-action-button,
+.entry-action-button {
+  border-color: var(--border-strong);
+  background: rgb(248 245 236 / 72%);
+}
+
+.secondary-button:hover,
+.case-action-button:hover,
+.entry-action-button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--surface);
+}
+
+.weekly-progress {
+  margin: 18px 0;
+  padding: 12px 0 16px;
+  border: 0;
+  border-bottom: 1px solid var(--journal-rule);
+  border-radius: 0;
+  background: transparent;
+}
+
+.weekly-progress-track {
+  height: 7px;
+  border-radius: 0;
+  background: #d9d7d0;
+}
+
+.weekly-progress-track span {
+  border-radius: 0;
+  background: var(--primary);
+}
+
+.weekly-item-list {
+  gap: 10px;
+}
+
+.weekly-item {
+  position: relative;
+  border-color: var(--border);
+  border-radius: 2px;
+  background: rgb(250 248 242 / 72%);
+  box-shadow: inset 4px 0 0 var(--journal-green);
+}
+
+.weekly-item:hover {
+  border-color: var(--border-strong);
+  box-shadow:
+    inset 4px 0 0 var(--journal-green),
+    0 4px 12px rgb(34 37 41 / 6%);
+}
+
+.weekly-item.weekly-item-standalone {
+  border-color: #d2b8ab;
+  background: #f4e8df;
+  box-shadow: inset 4px 0 0 var(--journal-rust);
+}
+
+.weekly-item.weekly-item-standalone:hover {
+  border-color: var(--journal-rust);
+  background: #f1e1d7;
+  box-shadow:
+    inset 4px 0 0 var(--journal-rust),
+    0 4px 12px rgb(104 48 34 / 8%);
+}
+
+.weekly-item-completed {
+  background: #ebe8df;
+  opacity: 0.72;
+}
+
+.weekly-item-checkbox input {
+  accent-color: var(--primary);
+}
+
+.weekly-item-title-row h3 {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.weekly-item-type {
+  border-radius: 2px;
+  color: var(--primary);
+  background: var(--accent-soft);
+  letter-spacing: 0.07em;
+}
+
+.weekly-item-type.weekly-item-type-standalone {
+  color: #7f3428;
+  background: #ead0c4;
+}
+
+.weekly-item-url:hover,
+.text-button,
+.note-toggle-button,
+.history-toggle-label {
+  color: var(--primary);
+}
+
+.danger-text-button,
+.danger-action {
+  color: var(--danger);
+}
+
+.weekly-journal-form,
+.inline-form,
+.entry-edit-form {
+  border-radius: 2px;
+  background: var(--surface-subtle);
+}
+
+.case-toolbar {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--journal-rule);
+}
+
+.journal-summary {
+  letter-spacing: 0.02em;
+}
+
+.case-list {
+  gap: 12px;
+}
+
+.case-list > li {
+  border-left: 4px solid var(--journal-green);
+}
+
+.case-status-dot {
+  border-radius: 2px;
+  background: var(--journal-green);
+  box-shadow: none;
+}
+
+.case-url {
+  color: var(--foreground);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+}
+
+.case-url:hover {
+  color: var(--primary);
+}
+
+.next-step-panel {
+  border-color: #b9c6b8;
+  border-radius: 2px;
+  background: #e9eee5;
+}
+
+.next-step-label {
+  color: var(--journal-green);
+}
+
+.next-step-text {
+  color: #26352a;
+}
+
+.history-heading {
+  border-bottom-color: var(--journal-rule);
+}
+
+.history-heading-button {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
+}
+
+.history-item:not(:last-child)::before {
+  background: var(--border-strong);
+}
+
+.history-marker {
+  border-color: #d8b3aa;
+  border-radius: 2px;
+  background: var(--journal-rust);
+}
+
+.history-content {
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: rgb(248 245 236 / 72%);
+}
+
+.history-title {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.history-note-editor {
+  border-radius: 2px;
+  font-family: var(--font-journal-sans), Arial, sans-serif;
+}
+
+.history-note-editor:hover,
+.history-note-editor:focus {
+  background: var(--journal-paper);
+}
+
+.backup-menu-popover {
+  border-color: var(--border-strong);
+  border-radius: 2px;
+  background: var(--journal-paper);
+  box-shadow: 6px 8px 0 rgb(23 26 29 / 8%);
+}
+
+.backup-menu-item {
+  border-radius: 1px;
+}
+
+.backup-menu-item:hover,
+.backup-menu-item:focus-within {
+  background: var(--accent-soft);
+}
+
+.empty-message,
+.weekly-empty-state,
+.status-message {
+  border-radius: 2px;
+}
+
+@media (min-width: 961px) {
+  .journal-shell {
+    width: min(calc(100% - 64px), 1240px);
+  }
+
+  .brand-mark {
+    width: 54px;
+    height: 46px;
+    flex-basis: 54px;
+    border-radius: 0;
+    font-size: 27px;
+  }
+
+  .journal-header h1 {
+    font-size: clamp(28px, 2.6vw, 36px);
+  }
+
+  .journal-tagline {
+    font-size: 9px;
+  }
+
+  .workspace-tab {
+    padding: 9px 16px;
+    font-size: 13px;
+  }
+
+  .weekly-plan-editor,
+  .capture-panel,
+  .weekly-plan-board,
+  .case-list > li {
+    border-radius: 2px;
+  }
+}
+
+@media (max-width: 640px) {
+  .journal-shell {
+    width: min(100% - 24px, 1240px);
+  }
+
+  .journal-header {
+    gap: 10px;
+  }
+
+  .brand-mark {
+    width: 46px;
+    height: 42px;
+    flex-basis: 46px;
+    border-radius: 0;
+    font-size: 23px;
+  }
+
+  .journal-header h1 {
+    font-size: 27px;
+  }
+
+  .workspace-introduction {
+    padding-left: 34px;
+  }
+
+  .workspace-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .workspace-tab {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Keep all functional text in This Week clear and consistent */
+.weekly-plan-editor,
+.weekly-plan-board,
+.weekly-plan-actions,
+.weekly-progress,
+.weekly-item,
+.weekly-item-title-row h3,
+.weekly-item-type,
+.weekly-item-url,
+.weekly-item-buttons,
+.weekly-journal-form,
+.previous-weeks-field,
+.field-help {
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Green accents on both edges of each journal card */
+.case-list > li {
+  border-left: 4px solid var(--journal-green);
+  border-right: 4px solid var(--journal-green);
+}
+
+/* Add update and View journal buttons */
+.case-card-actions .case-action-button {
+  border-color: #b9c6b8;
+  color: var(--journal-green);
+  background: #e9eee5;
+}
+
+.case-card-actions .case-action-button:hover {
+  border-color: var(--journal-green);
+  color: #ffffff;
+  background: var(--journal-green);
+}
