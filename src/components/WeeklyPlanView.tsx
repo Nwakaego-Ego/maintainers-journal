@@ -9,6 +9,7 @@ import {
   type WeeklyPlan,
   type WeeklyPlanItem,
 } from "../lib/weeklyPlanStorage";
+import CopyLinkButton from "./CopyLinkButton";
 type NewJournalDetails = {
   githubUrl: string;
   title: string;
@@ -162,6 +163,7 @@ export default function WeeklyPlanView({
   const [githubUrlText, setGithubUrlText] = useState("");
   const [standaloneTask, setStandaloneTask] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [showStandaloneOnly, setShowStandaloneOnly] = useState(false);
   const [startingJournalItemId, setStartingJournalItemId] = useState<
     string | null
   >(null);
@@ -189,6 +191,9 @@ export default function WeeklyPlanView({
   const standaloneItems = currentItems.filter((item) => {
     return !getItemGitHubUrl(item);
   });
+
+  const isStandaloneFilterActive =
+    showStandaloneOnly && standaloneItems.length > 0;
 
   const completedCount = currentItems.filter((item) => {
     return item.completed;
@@ -485,6 +490,7 @@ export default function WeeklyPlanView({
 
     persistWeeklyPlans(updatedPlans);
     onSelectedWeekChange(nextWeek);
+    setShowStandaloneOnly(false);
     setStartingJournalItemId(null);
     setJournalFormErrorItemId(null);
 
@@ -548,14 +554,18 @@ export default function WeeklyPlanView({
           </div>
 
           {itemGithubUrl && (
-            <a
-              className="weekly-item-url"
-              href={itemGithubUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {itemGithubUrl}
-            </a>
+            <div className="weekly-item-url-row">
+              <a
+                className="weekly-item-url"
+                href={itemGithubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {itemGithubUrl}
+              </a>
+
+              <CopyLinkButton value={itemGithubUrl} />
+            </div>
           )}
 
           <div className="weekly-item-buttons">
@@ -693,6 +703,7 @@ export default function WeeklyPlanView({
               value={selectedWeek}
               onChange={(event) => {
                 onSelectedWeekChange(event.currentTarget.value);
+                setShowStandaloneOnly(false);
                 setStartingJournalItemId(null);
                 setJournalFormErrorItemId(null);
                 setStatusMessage("");
@@ -751,9 +762,35 @@ https://github.com/owner/repo/issues/456`}
           <div>
             <p className="panel-kicker">This week</p>
             <h2>{formatWeekRange(selectedWeek)}</h2>
+            <p className="weekly-plan-summary">
+              {githubItems.length} GitHub{" "}
+              {githubItems.length === 1 ? "item" : "items"}
+              <span aria-hidden="true"> · </span>
+              {standaloneItems.length} standalone{" "}
+              {standaloneItems.length === 1 ? "task" : "tasks"}
+            </p>
           </div>
 
           <div className="weekly-plan-actions">
+            {standaloneItems.length > 0 && (
+              <button
+                className={`secondary-button standalone-filter-button ${
+                  isStandaloneFilterActive
+                    ? "standalone-filter-button-active"
+                    : ""
+                }`}
+                type="button"
+                aria-pressed={isStandaloneFilterActive}
+                onClick={() => {
+                  setShowStandaloneOnly((currentValue) => !currentValue);
+                }}
+              >
+                {isStandaloneFilterActive
+                  ? "Show all tasks"
+                  : `Standalone tasks (${standaloneItems.length})`}
+              </button>
+            )}
+
             <button
               className="secondary-button"
               type="button"
@@ -765,12 +802,13 @@ https://github.com/owner/repo/issues/456`}
 
             {previousPlans.length > 0 && (
               <label className="previous-weeks-field">
-                Previous weeks
+                Saved weeks
                 <select
                   className="form-control"
                   value={selectedWeek}
                   onChange={(event) => {
                     onSelectedWeekChange(event.currentTarget.value);
+                    setShowStandaloneOnly(false);
                     setStartingJournalItemId(null);
                     setJournalFormErrorItemId(null);
                     setStatusMessage("");
@@ -828,7 +866,7 @@ https://github.com/owner/repo/issues/456`}
           </div>
         ) : (
           <div className="weekly-item-groups">
-            {githubItems.length > 0 && (
+            {!isStandaloneFilterActive && githubItems.length > 0 && (
               <ul className="weekly-item-list">
                 {githubItems.map((item) => {
                   return renderWeeklyItem(item);

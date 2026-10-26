@@ -3,6 +3,28 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import type { JournalCase } from "../lib/journalCases";
+import CopyLinkButton from "./CopyLinkButton";
+
+const JOURNAL_CARD_TONES = [
+  "case-card-tone-sage",
+  "case-card-tone-blue",
+  "case-card-tone-apricot",
+  "case-card-tone-lavender",
+  "case-card-tone-rose",
+  "case-card-tone-butter",
+  "case-card-tone-teal",
+];
+
+function getJournalCardTone(githubUrl: string) {
+  const hash = Array.from(githubUrl.toLowerCase()).reduce(
+    (total, character) => {
+      return (total * 31 + character.charCodeAt(0)) >>> 0;
+    },
+    0,
+  );
+
+  return JOURNAL_CARD_TONES[hash % JOURNAL_CARD_TONES.length];
+}
 
 type JournalCaseCardProps = {
   caseElementId: string;
@@ -59,6 +81,7 @@ export default function JournalCaseCard({
 
   const currentNextStep = latestNextStepEntry?.nextStep;
   const hasMultipleEntries = journalCase.entries.length > 1;
+  const journalCardTone = getJournalCardTone(journalCase.githubUrl);
 
   const visibleEntries = isHistoryExpanded
     ? entriesNewestFirst
@@ -88,20 +111,28 @@ export default function JournalCaseCard({
   }
 
   return (
-    <li id={caseElementId} className="case-card" tabIndex={-1}>
+    <li
+      id={caseElementId}
+      className={`case-card ${journalCardTone}`}
+      tabIndex={-1}
+    >
       <header className="case-card-header">
         <div className="case-identity">
           <span className="case-status-dot" aria-hidden="true" />
 
-          <div>
-            <a
-              className="case-url"
-              href={journalCase.githubUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {journalCase.githubUrl}
-            </a>
+          <div className="case-identity-content">
+            <div className="case-url-row">
+              <a
+                className="case-url"
+                href={journalCase.githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {journalCase.githubUrl}
+              </a>
+
+              <CopyLinkButton value={journalCase.githubUrl} />
+            </div>
 
             <p className="case-entry-count">
               {journalCase.entries.length}{" "}

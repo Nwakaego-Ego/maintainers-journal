@@ -1818,17 +1818,6 @@ summary:focus-visible {
   padding-left: 42px;
 }
 
-.workspace-introduction::before {
-  position: absolute;
-  top: 1px;
-  left: 0;
-  color: var(--journal-rust);
-  content: "04";
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .workspace-introduction h2 {
   font-size: 19px;
   letter-spacing: 0.08em;
@@ -2288,4 +2277,152 @@ summary:focus-visible {
   border-color: var(--journal-green);
   color: #ffffff;
   background: var(--journal-green);
+}
+
+/* Compact copy control beside GitHub URLs */
+.case-identity-content,
+.case-url {
+  min-width: 0;
+}
+
+.case-url-row,
+.weekly-item-url-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.weekly-item-url-row {
+  margin-top: 7px;
+}
+
+.weekly-item-url-row .weekly-item-url {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.copy-link-button {
+  display: inline-grid;
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #b9c6b8;
+  border-radius: 7px;
+  color: var(--journal-green);
+  background: rgb(255 255 255 / 62%);
+}
+
+.copy-link-button svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.copy-link-button:hover,
+.copy-link-button-copied {
+  border-color: var(--journal-green);
+  color: #ffffff;
+  background: var(--journal-green);
+}
+
+/* Stable pastel colour assigned from each journal's GitHub URL */
+.case-list > li.case-card {
+  border-left-color: var(--case-card-accent, var(--journal-green));
+  border-right-color: var(--case-card-accent, var(--journal-green));
+  background: var(--case-card-background, var(--surface));
+}
+
+.case-card .case-status-dot {
+  background: var(--case-card-accent, var(--journal-green));
+  box-shadow: 0 0 0 4px var(--case-card-dot-ring, var(--accent-soft));
+}
+
+.case-card-tone-sage {
+  --case-card-background: #edf3ea;
+  --case-card-accent: #6f8b6d;
+  --case-card-dot-ring: #dce8d8;
+}
+
+.case-card-tone-blue {
+  --case-card-background: #edf4f8;
+  --case-card-accent: #6c8fa3;
+  --case-card-dot-ring: #dce9f0;
+}
+
+.case-card-tone-apricot {
+  --case-card-background: #fbf0e5;
+  --case-card-accent: #c48657;
+  --case-card-dot-ring: #f3dfcc;
+}
+
+.case-card-tone-lavender {
+  --case-card-background: #f2eef8;
+  --case-card-accent: #8975a8;
+  --case-card-dot-ring: #e5dcf0;
+}
+
+.case-card-tone-rose {
+  --case-card-background: #f8eeee;
+  --case-card-accent: #b7777b;
+  --case-card-dot-ring: #efdcdc;
+}
+
+.case-card-tone-butter {
+  --case-card-background: #faf5df;
+  --case-card-accent: #ae913c;
+  --case-card-dot-ring: #eee5bd;
+}
+
+.case-card-tone-teal {
+  --case-card-background: #e9f4f2;
+  --case-card-accent: #4f8b84;
+  --case-card-dot-ring: #d4e9e5;
+}
+
+@media (max-width: 640px) {
+  .case-url-row,
+  .weekly-item-url-row {
+    align-items: flex-start;
+  }
+
+  .case-url,
+  .weekly-item-url-row .weekly-item-url {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Weekly-plan task filter */
+.weekly-plan-summary {
+  margin-top: 7px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.standalone-filter-button {
+  border-color: #d8b35b;
+  color: #76500b;
+  background: #fff4d2;
+}
+
+.standalone-filter-button:hover,
+.standalone-filter-button-active,
+.standalone-filter-button-active:hover {
+  border-color: #bc8816;
+  color: #5f3d00;
+  background: #f5d888;
+}
+
+@media (max-width: 960px) {
+  .weekly-plan-actions {
+    flex-wrap: wrap;
+  }
 }
