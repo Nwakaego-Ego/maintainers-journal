@@ -2426,3 +2426,25 @@ summary:focus-visible {
     flex-wrap: wrap;
   }
 }
+
+/* Updated page background only */
+:root {
+  --page-background: #e4ebef;
+}
+
+html,
+body {
+  background-color: var(--page-background);
+}
+
+/* Pure-white surfaces shown inside the workspace */
+.capture-panel,
+.weekly-plan-editor,
+.weekly-plan-board,
+.weekly-empty-state,
+.history-content,
+.form-control,
+.backup-menu-trigger,
+.workspace-tab:not(.workspace-tab-active) {
+  background: #ffffff;
+}
