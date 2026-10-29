@@ -3,6 +3,7 @@ export type WeeklyPlanItem = {
   type: "github" | "standalone";
   title: string;
   githubUrl?: string;
+  reminderAt?: string;
   completed: boolean;
   createdAt: string;
 };
@@ -29,6 +30,7 @@ function isWeeklyPlanItem(value: unknown): value is WeeklyPlanItem {
     (item.type === "github" || item.type === "standalone") &&
     typeof item.title === "string" &&
     (item.githubUrl === undefined || typeof item.githubUrl === "string") &&
+    (item.reminderAt === undefined || typeof item.reminderAt === "string") &&
     typeof item.completed === "boolean" &&
     typeof item.createdAt === "string"
   );

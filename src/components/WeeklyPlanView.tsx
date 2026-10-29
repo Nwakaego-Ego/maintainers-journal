@@ -23,6 +23,13 @@ type WeeklyPlanViewProps = {
   onSelectedWeekChange: (weekOf: string) => void;
   onOpenJournal: (githubUrl: string) => void;
   onCreateJournal: (details: NewJournalDetails) => void;
+  onDueReminderCountChange: (count: number) => void;
+};
+
+type DueReminder = {
+  item: WeeklyPlanItem;
+  planId: string;
+  weekOf: string;
 };
 
 function extractGitHubUrls(value: string) {
@@ -151,17 +158,55 @@ function getNextWeek(weekOf: string) {
   return `${year}-${month}-${day}`;
 }
 
+function formatReminderDate(reminderAt: string) {
+  return new Date(reminderAt).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function getReminderInputValue(reminderAt?: string) {
+  if (!reminderAt) {
+    return "";
+  }
+
+  const reminderDate = new Date(reminderAt);
+
+  if (Number.isNaN(reminderDate.getTime())) {
+    return "";
+  }
+
+  const timezoneOffset = reminderDate.getTimezoneOffset() * 60_000;
+
+  return new Date(reminderDate.getTime() - timezoneOffset)
+    .toISOString()
+    .slice(0, 16);
+}
+
+function removeReminderFromItem(item: WeeklyPlanItem) {
+  const itemWithoutReminder = { ...item };
+
+  delete itemWithoutReminder.reminderAt;
+
+  return itemWithoutReminder;
+}
+
 export default function WeeklyPlanView({
   journalEntries,
   selectedWeek,
   onSelectedWeekChange,
   onOpenJournal,
   onCreateJournal,
+  onDueReminderCountChange,
 }: WeeklyPlanViewProps) {
   const [weeklyPlans, setWeeklyPlans] = useState<WeeklyPlan[]>([]);
 
   const [githubUrlText, setGithubUrlText] = useState("");
   const [standaloneTask, setStandaloneTask] = useState("");
+  const [newItemReminderAt, setNewItemReminderAt] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [showStandaloneOnly, setShowStandaloneOnly] = useState(false);
   const [startingJournalItemId, setStartingJournalItemId] = useState<
@@ -170,12 +215,32 @@ export default function WeeklyPlanView({
   const [journalFormErrorItemId, setJournalFormErrorItemId] = useState<
     string | null
   >(null);
+  const [editingReminderItemId, setEditingReminderItemId] = useState<
+    string | null
+  >(null);
+  const [editingTaskItemId, setEditingTaskItemId] = useState<string | null>(
+    null,
+  );
+  const [targetWeeklyItemId, setTargetWeeklyItemId] = useState<string | null>(
+    null,
+  );
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   useEffect(() => {
     const storedPlans = loadWeeklyPlans();
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore browser-only localStorage after hydration.
     setWeeklyPlans(storedPlans);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
   }, []);
 
   const currentPlan = weeklyPlans.find((plan) => {
@@ -208,9 +273,82 @@ export default function WeeklyPlanView({
     return b.weekOf.localeCompare(a.weekOf);
   });
 
+  const dueReminders = weeklyPlans
+    .flatMap((plan) => {
+      return plan.items
+        .filter((item) => {
+          if (!item.reminderAt || item.completed) {
+            return false;
+          }
+
+          const reminderTime = new Date(item.reminderAt).getTime();
+
+          return !Number.isNaN(reminderTime) && reminderTime <= currentTime;
+        })
+        .map((item) => {
+          return {
+            item,
+            planId: plan.id,
+            weekOf: plan.weekOf,
+          };
+        });
+    })
+    .sort((a, b) => {
+      return (a.item.reminderAt ?? "").localeCompare(b.item.reminderAt ?? "");
+    });
+
+  useEffect(() => {
+    onDueReminderCountChange(dueReminders.length);
+  }, [dueReminders.length, onDueReminderCountChange]);
+
+  useEffect(() => {
+    if (!targetWeeklyItemId) {
+      return;
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      const weeklyItem = document.getElementById(
+        `weekly-item-${targetWeeklyItemId}`,
+      );
+
+      weeklyItem?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      weeklyItem?.focus({ preventScroll: true });
+      setTargetWeeklyItemId(null);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+    };
+  }, [selectedWeek, targetWeeklyItemId]);
+
   function persistWeeklyPlans(plans: WeeklyPlan[]) {
     saveWeeklyPlans(plans);
     setWeeklyPlans(plans);
+  }
+
+  function updatePlanItem(
+    planId: string,
+    itemId: string,
+    updateItem: (item: WeeklyPlanItem) => WeeklyPlanItem,
+  ) {
+    const updatedPlans = weeklyPlans.map((plan) => {
+      if (plan.id !== planId) {
+        return plan;
+      }
+
+      return {
+        ...plan,
+        items: plan.items.map((item) => {
+          return item.id === itemId ? updateItem(item) : item;
+        }),
+      };
+    });
+
+    persistWeeklyPlans(updatedPlans);
   }
 
   function replaceSelectedWeekItems(items: WeeklyPlanItem[]) {
@@ -256,6 +394,9 @@ export default function WeeklyPlanView({
 
     const cleanStandaloneTask =
       urlsFromStandaloneField.length === 0 ? standaloneTask.trim() : "";
+    const reminderAt = newItemReminderAt
+      ? new Date(newItemReminderAt).toISOString()
+      : undefined;
 
     if (githubUrls.length === 0 && !cleanStandaloneTask) {
       setStatusMessage("Add at least one GitHub URL or a standalone task.");
@@ -284,6 +425,7 @@ export default function WeeklyPlanView({
           type: "github",
           title: getGitHubItemTitle(githubUrl, journalEntries),
           githubUrl: normalizeGitHubUrl(githubUrl),
+          reminderAt,
           completed: false,
           createdAt: new Date().toISOString(),
         };
@@ -295,6 +437,7 @@ export default function WeeklyPlanView({
             id: crypto.randomUUID(),
             type: "standalone",
             title: cleanStandaloneTask,
+            reminderAt,
             completed: false,
             createdAt: new Date().toISOString(),
           },
@@ -316,6 +459,7 @@ export default function WeeklyPlanView({
 
     setGithubUrlText("");
     setStandaloneTask("");
+    setNewItemReminderAt("");
 
     setStatusMessage(
       addedCount === 1
@@ -381,6 +525,125 @@ export default function WeeklyPlanView({
     replaceSelectedWeekItems(updatedItems);
   }
 
+  function handleReminderSubmit(
+    event: FormEvent<HTMLFormElement>,
+    itemId: string,
+  ) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const reminderAt = formData.get("reminderAt");
+
+    if (typeof reminderAt !== "string" || !reminderAt) {
+      return;
+    }
+
+    const reminderDate = new Date(reminderAt);
+
+    if (Number.isNaN(reminderDate.getTime())) {
+      return;
+    }
+
+    const updatedItems = currentItems.map((item) => {
+      if (item.id !== itemId) {
+        return item;
+      }
+
+      return {
+        ...item,
+        reminderAt: reminderDate.toISOString(),
+      };
+    });
+
+    replaceSelectedWeekItems(updatedItems);
+    setEditingReminderItemId(null);
+    setStatusMessage("Reminder saved.");
+  }
+
+  function handleRemoveReminder(itemId: string) {
+    const updatedItems = currentItems.map((item) => {
+      if (item.id !== itemId) {
+        return item;
+      }
+
+      return removeReminderFromItem(item);
+    });
+
+    replaceSelectedWeekItems(updatedItems);
+    setEditingReminderItemId(null);
+    setStatusMessage("Reminder removed.");
+  }
+
+  function handleTaskEditSubmit(
+    event: FormEvent<HTMLFormElement>,
+    itemId: string,
+  ) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const title = formData.get("title");
+
+    if (typeof title !== "string" || !title.trim()) {
+      return;
+    }
+
+    const updatedItems = currentItems.map((item) => {
+      if (item.id !== itemId) {
+        return item;
+      }
+
+      return {
+        ...item,
+        title: title.trim(),
+      };
+    });
+
+    replaceSelectedWeekItems(updatedItems);
+    setEditingTaskItemId(null);
+    setStatusMessage("Task updated.");
+  }
+
+  function handleOpenReminder(reminder: DueReminder) {
+    const githubUrl = getItemGitHubUrl(reminder.item);
+
+    if (githubUrl) {
+      onOpenJournal(githubUrl);
+      return;
+    }
+
+    onSelectedWeekChange(reminder.weekOf);
+    setShowStandaloneOnly(true);
+    setTargetWeeklyItemId(reminder.item.id);
+  }
+
+  function handleSnoozeReminder(reminder: DueReminder) {
+    const snoozedUntil = new Date(currentTime);
+
+    snoozedUntil.setDate(snoozedUntil.getDate() + 1);
+
+    updatePlanItem(reminder.planId, reminder.item.id, (item) => {
+      return {
+        ...item,
+        reminderAt: snoozedUntil.toISOString(),
+      };
+    });
+
+    setStatusMessage(
+      `Reminder snoozed until ${formatReminderDate(snoozedUntil.toISOString())}.`,
+    );
+  }
+
+  function handleCompleteReminder(reminder: DueReminder) {
+    updatePlanItem(reminder.planId, reminder.item.id, (item) => {
+      return {
+        ...item,
+        completed: true,
+      };
+    });
+
+    setStatusMessage("Item marked as completed.");
+  }
+
   function handleDeleteItem(itemId: string) {
     const shouldDelete = window.confirm(
       "Remove this item from the weekly plan?",
@@ -443,10 +706,11 @@ export default function WeeklyPlanView({
 
     const copiedItems = carriedItems.map((item) => {
       const detectedGithubUrl = getItemGitHubUrl(item);
+      const itemWithoutReminder = removeReminderFromItem(item);
 
       if (detectedGithubUrl) {
         return {
-          ...item,
+          ...itemWithoutReminder,
           id: crypto.randomUUID(),
           type: "github" as const,
           githubUrl: detectedGithubUrl,
@@ -456,7 +720,7 @@ export default function WeeklyPlanView({
       }
 
       return {
-        ...item,
+        ...itemWithoutReminder,
         id: crypto.randomUUID(),
         completed: false,
         createdAt: new Date().toISOString(),
@@ -523,7 +787,12 @@ export default function WeeklyPlanView({
       .join(" ");
 
     return (
-      <li className={itemClassName} key={item.id}>
+      <li
+        className={itemClassName}
+        id={`weekly-item-${item.id}`}
+        key={item.id}
+        tabIndex={-1}
+      >
         <label className="weekly-item-checkbox">
           <input
             type="checkbox"
@@ -568,6 +837,13 @@ export default function WeeklyPlanView({
             </div>
           )}
 
+          {item.reminderAt && (
+            <p className="weekly-item-reminder">
+              <span aria-hidden="true">●</span> Reminder:{" "}
+              {formatReminderDate(item.reminderAt)}
+            </p>
+          )}
+
           <div className="weekly-item-buttons">
             {itemGithubUrl && journalExists && (
               <button
@@ -597,6 +873,33 @@ export default function WeeklyPlanView({
             )}
 
             <button
+              className="text-button"
+              type="button"
+              aria-expanded={editingReminderItemId === item.id}
+              onClick={() => {
+                setEditingReminderItemId(
+                  editingReminderItemId === item.id ? null : item.id,
+                );
+              }}
+            >
+              {item.reminderAt ? "Change reminder" : "Set reminder"}
+            </button>
+            {isStandalone && (
+              <button
+                className="text-button"
+                type="button"
+                aria-expanded={editingTaskItemId === item.id}
+                onClick={() => {
+                  setEditingTaskItemId(
+                    editingTaskItemId === item.id ? null : item.id,
+                  );
+                }}
+              >
+                Edit task
+              </button>
+            )}
+
+            <button
               className="danger-text-button"
               type="button"
               onClick={() => {
@@ -606,6 +909,94 @@ export default function WeeklyPlanView({
               Remove
             </button>
           </div>
+          {isStandalone && editingTaskItemId === item.id && (
+            <form
+              className="weekly-task-edit-form"
+              onSubmit={(event) => {
+                handleTaskEditSubmit(event, item.id);
+              }}
+            >
+              <label htmlFor={`weekly-task-title-${item.id}`}>Task</label>
+
+              <input
+                className="form-control"
+                id={`weekly-task-title-${item.id}`}
+                name="title"
+                type="text"
+                defaultValue={item.title}
+                required
+              />
+
+              <div className="weekly-task-edit-actions">
+                <button
+                  className="secondary-button compact-button"
+                  type="submit"
+                >
+                  Save changes
+                </button>
+
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => {
+                    setEditingTaskItemId(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+          {editingReminderItemId === item.id && (
+            <form
+              className="weekly-reminder-form"
+              onSubmit={(event) => {
+                handleReminderSubmit(event, item.id);
+              }}
+            >
+              <label htmlFor={`weekly-reminder-${item.id}`}>Remind me on</label>
+
+              <input
+                className="form-control"
+                id={`weekly-reminder-${item.id}`}
+                name="reminderAt"
+                type="datetime-local"
+                defaultValue={getReminderInputValue(item.reminderAt)}
+                required
+              />
+
+              <div className="weekly-reminder-form-actions">
+                <button
+                  className="secondary-button compact-button"
+                  type="submit"
+                >
+                  Save reminder
+                </button>
+
+                {item.reminderAt && (
+                  <button
+                    className="danger-text-button"
+                    type="button"
+                    onClick={() => {
+                      handleRemoveReminder(item.id);
+                    }}
+                  >
+                    Remove reminder
+                  </button>
+                )}
+
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => {
+                    setEditingReminderItemId(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
 
           {itemGithubUrl && !journalExists && isStartingJournal && (
             <form
@@ -745,6 +1136,24 @@ https://github.com/owner/repo/issues/456`}
             />
           </div>
 
+          <div className="form-field">
+            <label htmlFor="weekly-item-reminder">
+              Remind me on (optional)
+            </label>
+            <input
+              className="form-control"
+              id="weekly-item-reminder"
+              type="datetime-local"
+              value={newItemReminderAt}
+              onChange={(event) => {
+                setNewItemReminderAt(event.currentTarget.value);
+              }}
+            />
+            <p className="field-help">
+              This reminder will apply to everything added from this form.
+            </p>
+          </div>
+
           <button className="primary-button" type="submit">
             Add to this week
           </button>
@@ -758,6 +1167,72 @@ https://github.com/owner/repo/issues/456`}
       </aside>
 
       <section className="weekly-plan-board" aria-label="Weekly work plan">
+        {dueReminders.length > 0 && (
+          <section
+            className="due-reminders"
+            aria-labelledby="due-reminders-title"
+          >
+            <div className="due-reminders-heading">
+              <span className="due-reminders-dot" aria-hidden="true" />
+              <h2 id="due-reminders-title">Due reminders</h2>
+              <span className="due-reminders-count">{dueReminders.length}</span>
+            </div>
+
+            <ul className="due-reminder-list">
+              {dueReminders.map((reminder) => {
+                const githubUrl = getItemGitHubUrl(reminder.item);
+
+                return (
+                  <li
+                    className="due-reminder-item"
+                    key={`${reminder.planId}-${reminder.item.id}`}
+                  >
+                    <div className="due-reminder-content">
+                      <strong>{reminder.item.title}</strong>
+                      <span>
+                        Scheduled for{" "}
+                        {formatReminderDate(reminder.item.reminderAt ?? "")}
+                      </span>
+                    </div>
+
+                    <div className="due-reminder-actions">
+                      <button
+                        className="secondary-button compact-button"
+                        type="button"
+                        onClick={() => {
+                          handleOpenReminder(reminder);
+                        }}
+                      >
+                        {githubUrl ? "Open journal" : "View task"}
+                      </button>
+
+                      <button
+                        className="secondary-button compact-button"
+                        type="button"
+                        onClick={() => {
+                          handleSnoozeReminder(reminder);
+                        }}
+                      >
+                        Snooze 1 day
+                      </button>
+
+                      <button
+                        className="primary-button compact-button"
+                        type="button"
+                        onClick={() => {
+                          handleCompleteReminder(reminder);
+                        }}
+                      >
+                        Mark done
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
         <div className="weekly-plan-heading">
           <div>
             <p className="panel-kicker">This week</p>

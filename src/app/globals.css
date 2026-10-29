@@ -2448,3 +2448,157 @@ body {
 .workspace-tab:not(.workspace-tab-active) {
   background: #ffffff;
 }
+
+/* Scheduled follow-ups */
+.due-reminders {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid #e3c36f;
+  border-left: 5px solid #d99a1b;
+  border-radius: 10px;
+  background: #fffaf0;
+}
+
+.due-reminders-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.due-reminders-heading h2 {
+  color: #865d0d;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.due-reminders-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  border-radius: 50%;
+  background: #d99a1b;
+  box-shadow: 0 0 0 4px rgb(217 154 27 / 15%);
+}
+
+.due-reminders-count {
+  display: inline-grid;
+  min-width: 21px;
+  height: 21px;
+  place-items: center;
+  border-radius: 999px;
+  color: #714e0b;
+  background: #f6e5b9;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.due-reminder-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.due-reminder-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding-top: 10px;
+  border-top: 1px solid rgb(180 137 42 / 24%);
+}
+
+.due-reminder-content {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.due-reminder-content strong {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+
+.due-reminder-content span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.due-reminder-actions,
+.weekly-reminder-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.weekly-item-reminder {
+  margin-top: 9px;
+  color: #865d0d;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.weekly-item-reminder span {
+  margin-right: 3px;
+  color: #d99a1b;
+  font-size: 9px;
+}
+
+.weekly-reminder-form {
+  display: grid;
+  max-width: 520px;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 13px;
+  border: 1px solid #dfd5bc;
+  border-radius: 9px;
+  background: #fffaf0;
+}
+
+.weekly-reminder-form > label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.weekly-item:focus {
+  outline: 3px solid rgb(35 94 126 / 22%);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .due-reminder-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .due-reminder-actions {
+    width: 100%;
+  }
+}
+
+/* Standalone task editing */
+.weekly-task-edit-form {
+  display: grid;
+  max-width: 520px;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+.weekly-task-edit-form > label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.weekly-task-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}

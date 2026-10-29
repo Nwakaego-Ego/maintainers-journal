@@ -157,6 +157,7 @@ export default function QuickCaptureForm() {
     null,
   );
   const [targetJournalUrl, setTargetJournalUrl] = useState<string | null>(null);
+  const [dueReminderCount, setDueReminderCount] = useState(0);
   const backupMenuRef = useRef<HTMLDetailsElement>(null);
 
   const captureFormRef = useRef<HTMLFormElement>(null);
@@ -598,7 +599,7 @@ export default function QuickCaptureForm() {
             setActiveView("week");
           }}
         >
-          This Week
+          This Week{dueReminderCount > 0 ? ` (${dueReminderCount})` : ""}
         </button>
 
         <button
@@ -632,6 +633,7 @@ export default function QuickCaptureForm() {
             onSelectedWeekChange={setSelectedWeek}
             onOpenJournal={handleOpenJournal}
             onCreateJournal={handleCreateJournalFromWeeklyPlan}
+            onDueReminderCountChange={setDueReminderCount}
           />
         </div>
       ) : (
