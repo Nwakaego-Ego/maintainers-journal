@@ -21,6 +21,7 @@ type WeeklyPlanViewProps = {
   journalEntries: JournalEntry[];
   selectedWeek: string;
   onSelectedWeekChange: (weekOf: string) => void;
+  onWeeklyPlansChange: (plans: WeeklyPlan[]) => void;
   onOpenJournal: (githubUrl: string) => void;
   onCreateJournal: (details: NewJournalDetails) => void;
   onDueReminderCountChange: (count: number) => void;
@@ -31,6 +32,8 @@ type DueReminder = {
   planId: string;
   weekOf: string;
 };
+
+type AddItemMode = "github" | "standalone";
 
 function extractGitHubUrls(value: string) {
   const matches = value.match(/https?:\/\/github\.com\/[^\s]+/gi) ?? [];
@@ -92,19 +95,18 @@ function getGitHubItemLabel(githubUrl: string) {
   return "GitHub";
 }
 
-function getGitHubItemTitle(githubUrl: string, journalEntries: JournalEntry[]) {
+function getDefaultGitHubItemTitle(
+  githubUrl: string,
+  journalEntries: JournalEntry[],
+) {
   const journalKey = getJournalKey(githubUrl);
 
-  const matchingEntries = journalEntries.filter((entry) => {
-    return getJournalKey(entry.githubUrl) === journalKey;
-  });
+  const latestJournalTitle = [...journalEntries].reverse().find((entry) => {
+    return getJournalKey(entry.githubUrl) === journalKey && entry.title?.trim();
+  })?.title;
 
-  const latestEntryWithTitle = [...matchingEntries]
-    .reverse()
-    .find((entry) => entry.title?.trim());
-
-  if (latestEntryWithTitle?.title) {
-    return latestEntryWithTitle.title;
+  if (latestJournalTitle?.trim()) {
+    return latestJournalTitle.trim();
   }
 
   const pullRequestMatch = githubUrl.match(/\/pull\/(\d+)/i);
@@ -119,7 +121,7 @@ function getGitHubItemTitle(githubUrl: string, journalEntries: JournalEntry[]) {
     return `Issue #${issueMatch[1]}`;
   }
 
-  return githubUrl;
+  return "GitHub work";
 }
 
 function formatWeekRange(weekOf: string) {
@@ -198,14 +200,17 @@ export default function WeeklyPlanView({
   journalEntries,
   selectedWeek,
   onSelectedWeekChange,
+  onWeeklyPlansChange,
   onOpenJournal,
   onCreateJournal,
   onDueReminderCountChange,
 }: WeeklyPlanViewProps) {
   const [weeklyPlans, setWeeklyPlans] = useState<WeeklyPlan[]>([]);
 
-  const [githubUrlText, setGithubUrlText] = useState("");
+  const [addItemMode, setAddItemMode] = useState<AddItemMode>("github");
+  const [githubItemTitle, setGithubItemTitle] = useState("");
   const [standaloneTask, setStandaloneTask] = useState("");
+  const [relevantGithubUrl, setRelevantGithubUrl] = useState("");
   const [newItemReminderAt, setNewItemReminderAt] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [showStandaloneOnly, setShowStandaloneOnly] = useState(false);
@@ -328,6 +333,7 @@ export default function WeeklyPlanView({
   function persistWeeklyPlans(plans: WeeklyPlan[]) {
     saveWeeklyPlans(plans);
     setWeeklyPlans(plans);
+    onWeeklyPlansChange(plans);
   }
 
   function updatePlanItem(
@@ -385,86 +391,77 @@ export default function WeeklyPlanView({
   function handleAddItems(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const urlsFromGitHubField = extractGitHubUrls(githubUrlText);
-    const urlsFromStandaloneField = extractGitHubUrls(standaloneTask);
-
-    const githubUrls = Array.from(
-      new Set([...urlsFromGitHubField, ...urlsFromStandaloneField]),
-    );
-
-    const cleanStandaloneTask =
-      urlsFromStandaloneField.length === 0 ? standaloneTask.trim() : "";
+    const cleanGithubTitle = githubItemTitle.trim();
+    const cleanStandaloneTask = standaloneTask.trim();
+    const cleanGithubUrl = relevantGithubUrl.trim()
+      ? normalizeGitHubUrl(relevantGithubUrl)
+      : undefined;
     const reminderAt = newItemReminderAt
       ? new Date(newItemReminderAt).toISOString()
       : undefined;
 
-    if (githubUrls.length === 0 && !cleanStandaloneTask) {
-      setStatusMessage("Add at least one GitHub URL or a standalone task.");
+    if (addItemMode === "standalone" && !cleanStandaloneTask) {
+      setStatusMessage("Describe the standalone task you want to add.");
       return;
     }
 
-    const existingJournalKeys = new Set(
-      currentItems
-        .map((item) => {
-          const githubUrl = getItemGitHubUrl(item);
+    if (
+      addItemMode === "github" &&
+      (!cleanGithubUrl ||
+        !/^https?:\/\/github\.com\/[^/]+\/[^/]+\/(pull|issues)\/\d+(?:[/?#].*)?$/i.test(
+          cleanGithubUrl,
+        ))
+    ) {
+      setStatusMessage("Add a valid GitHub pull request or issue URL.");
+      return;
+    }
 
-          return githubUrl ? getJournalKey(githubUrl) : undefined;
-        })
-        .filter((journalKey): journalKey is string => {
-          return typeof journalKey === "string";
-        }),
-    );
+    if (
+      addItemMode === "github" &&
+      cleanGithubUrl &&
+      currentItems.some((item) => {
+        const itemGithubUrl = getItemGitHubUrl(item);
 
-    const newGitHubItems: WeeklyPlanItem[] = githubUrls
-      .filter((githubUrl) => {
-        return !existingJournalKeys.has(getJournalKey(githubUrl));
+        return (
+          itemGithubUrl &&
+          getJournalKey(itemGithubUrl) === getJournalKey(cleanGithubUrl)
+        );
       })
-      .map((githubUrl) => {
-        return {
-          id: crypto.randomUUID(),
-          type: "github",
-          title: getGitHubItemTitle(githubUrl, journalEntries),
-          githubUrl: normalizeGitHubUrl(githubUrl),
-          reminderAt,
-          completed: false,
-          createdAt: new Date().toISOString(),
-        };
-      });
-
-    const newStandaloneItems: WeeklyPlanItem[] = cleanStandaloneTask
-      ? [
-          {
-            id: crypto.randomUUID(),
-            type: "standalone",
-            title: cleanStandaloneTask,
-            reminderAt,
-            completed: false,
-            createdAt: new Date().toISOString(),
-          },
-        ]
-      : [];
-
-    const addedCount = newGitHubItems.length + newStandaloneItems.length;
-
-    if (addedCount === 0) {
-      setStatusMessage("Those journals are already included in this week.");
+    ) {
+      setStatusMessage(
+        "That GitHub item is already linked to a task this week.",
+      );
       return;
     }
 
-    replaceSelectedWeekItems([
-      ...currentItems,
-      ...newGitHubItems,
-      ...newStandaloneItems,
-    ]);
+    const newItem: WeeklyPlanItem = {
+      id: crypto.randomUUID(),
+      type: addItemMode,
+      title:
+        addItemMode === "github" && cleanGithubUrl
+          ? cleanGithubTitle ||
+            getDefaultGitHubItemTitle(cleanGithubUrl, journalEntries)
+          : cleanStandaloneTask,
+      githubUrl: addItemMode === "github" ? cleanGithubUrl : undefined,
+      reminderAt,
+      completed: false,
+      createdAt: new Date().toISOString(),
+    };
 
-    setGithubUrlText("");
-    setStandaloneTask("");
+    replaceSelectedWeekItems([...currentItems, newItem]);
+
+    if (addItemMode === "github") {
+      setGithubItemTitle("");
+      setRelevantGithubUrl("");
+    } else {
+      setStandaloneTask("");
+    }
+
     setNewItemReminderAt("");
-
     setStatusMessage(
-      addedCount === 1
-        ? "Added 1 item to this week."
-        : `Added ${addedCount} items to this week.`,
+      addItemMode === "github"
+        ? "GitHub work added to this week."
+        : "Standalone task added to this week.",
     );
   }
 
@@ -875,6 +872,19 @@ export default function WeeklyPlanView({
             <button
               className="text-button"
               type="button"
+              aria-expanded={editingTaskItemId === item.id}
+              onClick={() => {
+                setEditingTaskItemId(
+                  editingTaskItemId === item.id ? null : item.id,
+                );
+              }}
+            >
+              {itemGithubUrl ? "Edit title" : "Edit task"}
+            </button>
+
+            <button
+              className="text-button"
+              type="button"
               aria-expanded={editingReminderItemId === item.id}
               onClick={() => {
                 setEditingReminderItemId(
@@ -884,20 +894,6 @@ export default function WeeklyPlanView({
             >
               {item.reminderAt ? "Change reminder" : "Set reminder"}
             </button>
-            {isStandalone && (
-              <button
-                className="text-button"
-                type="button"
-                aria-expanded={editingTaskItemId === item.id}
-                onClick={() => {
-                  setEditingTaskItemId(
-                    editingTaskItemId === item.id ? null : item.id,
-                  );
-                }}
-              >
-                Edit task
-              </button>
-            )}
 
             <button
               className="danger-text-button"
@@ -909,14 +905,17 @@ export default function WeeklyPlanView({
               Remove
             </button>
           </div>
-          {isStandalone && editingTaskItemId === item.id && (
+
+          {editingTaskItemId === item.id && (
             <form
               className="weekly-task-edit-form"
               onSubmit={(event) => {
                 handleTaskEditSubmit(event, item.id);
               }}
             >
-              <label htmlFor={`weekly-task-title-${item.id}`}>Task</label>
+              <label htmlFor={`weekly-task-title-${item.id}`}>
+                {itemGithubUrl ? "Title" : "Task"}
+              </label>
 
               <input
                 className="form-control"
@@ -947,6 +946,7 @@ export default function WeeklyPlanView({
               </div>
             </form>
           )}
+
           {editingReminderItemId === item.id && (
             <form
               className="weekly-reminder-form"
@@ -1102,39 +1102,96 @@ export default function WeeklyPlanView({
             />
           </div>
 
-          <div className="form-field">
-            <label htmlFor="weekly-github-urls">Paste GitHub URLs</label>
-            <textarea
-              className="form-control"
-              id="weekly-github-urls"
-              rows={7}
-              value={githubUrlText}
-              placeholder={`https://github.com/owner/repo/pull/123
-https://github.com/owner/repo/issues/456`}
-              onChange={(event) => {
-                setGithubUrlText(event.currentTarget.value);
-              }}
-            />
+          <fieldset className="weekly-add-mode">
+            <legend>Add</legend>
 
-            <p className="field-help">
-              You can paste several URLs at once, including URLs mixed into
-              other text.
-            </p>
-          </div>
+            <div className="weekly-add-mode-options">
+              <button
+                className={
+                  addItemMode === "github"
+                    ? "weekly-add-mode-button weekly-add-mode-button-active"
+                    : "weekly-add-mode-button"
+                }
+                type="button"
+                aria-pressed={addItemMode === "github"}
+                onClick={() => {
+                  setAddItemMode("github");
+                  setStatusMessage("");
+                }}
+              >
+                GitHub work
+              </button>
 
-          <div className="form-field">
-            <label htmlFor="standalone-weekly-task">Standalone task</label>
-            <input
-              className="form-control"
-              id="standalone-weekly-task"
-              type="text"
-              value={standaloneTask}
-              placeholder="For example: follow up with Dora"
-              onChange={(event) => {
-                setStandaloneTask(event.currentTarget.value);
-              }}
-            />
-          </div>
+              <button
+                className={
+                  addItemMode === "standalone"
+                    ? "weekly-add-mode-button weekly-add-mode-button-active"
+                    : "weekly-add-mode-button"
+                }
+                type="button"
+                aria-pressed={addItemMode === "standalone"}
+                onClick={() => {
+                  setAddItemMode("standalone");
+                  setStatusMessage("");
+                }}
+              >
+                Standalone task
+              </button>
+            </div>
+          </fieldset>
+
+          {addItemMode === "github" ? (
+            <>
+              <div className="form-field">
+                <label htmlFor="weekly-github-url">PR or issue URL</label>
+                <input
+                  className="form-control"
+                  id="weekly-github-url"
+                  type="url"
+                  value={relevantGithubUrl}
+                  placeholder="https://github.com/owner/repo/issues/456"
+                  required
+                  onChange={(event) => {
+                    setRelevantGithubUrl(event.currentTarget.value);
+                  }}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="weekly-github-title">Title (optional)</label>
+                <textarea
+                  className="form-control"
+                  id="weekly-github-title"
+                  rows={3}
+                  value={githubItemTitle}
+                  placeholder="For example: Review the latest changes"
+                  onChange={(event) => {
+                    setGithubItemTitle(event.currentTarget.value);
+                  }}
+                />
+
+                <p className="field-help">
+                  Leave this blank to use its saved journal title or GitHub
+                  number.
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="form-field">
+              <label htmlFor="standalone-weekly-task">Task</label>
+              <textarea
+                className="form-control"
+                id="standalone-weekly-task"
+                rows={4}
+                value={standaloneTask}
+                placeholder="What do you need to do?"
+                required
+                onChange={(event) => {
+                  setStandaloneTask(event.currentTarget.value);
+                }}
+              />
+            </div>
+          )}
 
           <div className="form-field">
             <label htmlFor="weekly-item-reminder">
@@ -1150,7 +1207,7 @@ https://github.com/owner/repo/issues/456`}
               }}
             />
             <p className="field-help">
-              This reminder will apply to everything added from this form.
+              You will see it at the top of This Week when it is due.
             </p>
           </div>
 

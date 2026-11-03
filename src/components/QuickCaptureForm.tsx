@@ -107,6 +107,49 @@ function getJournalElementId(githubUrl: string) {
   return `journal-${encodeURIComponent(getJournalKey(githubUrl))}`;
 }
 
+function formatSearchWeek(weekOf: string) {
+  return new Date(`${weekOf}T00:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function getWeeklyItemLabel(githubUrl?: string) {
+  if (!githubUrl) {
+    return "Task";
+  }
+
+  if (/\/pull\/\d+/i.test(githubUrl)) {
+    return "PR";
+  }
+
+  if (/\/issues\/\d+/i.test(githubUrl)) {
+    return "Issue";
+  }
+
+  return "GitHub";
+}
+
+function matchesWorkspaceSearch(value: string, searchTerm: string) {
+  if (!searchTerm) {
+    return true;
+  }
+
+  const searchTokens = searchTerm.match(/[\p{L}\p{N}]+/gu) ?? [];
+  const valueTokens = value.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+
+  if (searchTokens.length === 0) {
+    return value.toLowerCase().includes(searchTerm);
+  }
+
+  return searchTokens.every((searchToken) => {
+    return valueTokens.some((valueToken) => {
+      return valueToken.startsWith(searchToken);
+    });
+  });
+}
+
 function mergeWeeklyPlans(
   importedPlans: WeeklyPlan[],
   existingPlans: WeeklyPlan[],
@@ -143,6 +186,9 @@ function mergeWeeklyPlans(
 
 export default function QuickCaptureForm() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [searchableWeeklyPlans, setSearchableWeeklyPlans] = useState<
+    WeeklyPlan[]
+  >([]);
   const [previousMatchCount, setPreviousMatchCount] = useState(0);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [updatingCaseUrl, setUpdatingCaseUrl] = useState<string | null>(null);
@@ -157,16 +203,20 @@ export default function QuickCaptureForm() {
     null,
   );
   const [targetJournalUrl, setTargetJournalUrl] = useState<string | null>(null);
+  const [openJournalUrl, setOpenJournalUrl] = useState<string | null>(null);
   const [dueReminderCount, setDueReminderCount] = useState(0);
   const backupMenuRef = useRef<HTMLDetailsElement>(null);
+  const journalDrawerCloseRef = useRef<HTMLButtonElement>(null);
 
   const captureFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const entries = loadJournalEntries();
+    const weeklyPlans = loadWeeklyPlans();
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore browser-only localStorage after hydration.
     setJournalEntries(entries);
+    setSearchableWeeklyPlans(weeklyPlans);
   }, []);
 
   useEffect(() => {
@@ -210,6 +260,29 @@ export default function QuickCaptureForm() {
       window.cancelAnimationFrame(animationFrame);
     };
   }, [activeView, journalToStartUrl, targetJournalUrl]);
+
+  useEffect(() => {
+    if (!openJournalUrl) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpenJournalUrl(null);
+      }
+    }
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    journalDrawerCloseRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [openJournalUrl]);
 
   function closeBackupMenu() {
     if (backupMenuRef.current) {
@@ -376,6 +449,15 @@ export default function QuickCaptureForm() {
     });
 
     persistJournalEntries(remainingEntries);
+
+    if (
+      openJournalUrl &&
+      !remainingEntries.some((entry) => {
+        return getJournalKey(entry.githubUrl) === getJournalKey(openJournalUrl);
+      })
+    ) {
+      setOpenJournalUrl(null);
+    }
   }
 
   function handleEditSubmit(
@@ -451,16 +533,12 @@ export default function QuickCaptureForm() {
       return getJournalKey(entry.githubUrl) === journalKey;
     });
 
-    setActiveView("journals");
-
     if (existingEntry) {
-      setSearchTerm(existingEntry.githubUrl);
-      setTargetJournalUrl(existingEntry.githubUrl);
-      setCaptureGithubUrl("");
-      setJournalToStartUrl(null);
+      setOpenJournalUrl(existingEntry.githubUrl);
       return;
     }
 
+    setActiveView("journals");
     setSearchTerm("");
     setTargetJournalUrl(null);
     setCaptureGithubUrl(cleanGithubUrl);
@@ -544,6 +622,7 @@ export default function QuickCaptureForm() {
         );
 
         saveWeeklyPlans(mergedWeeklyPlans);
+        setSearchableWeeklyPlans(mergedWeeklyPlans);
       }
 
       window.alert(
@@ -560,6 +639,48 @@ export default function QuickCaptureForm() {
 
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
   const journals = groupEntriesByUrl(journalEntries);
+  const openJournal = openJournalUrl
+    ? journals.find((journal) => {
+        return (
+          getJournalKey(journal.githubUrl) === getJournalKey(openJournalUrl)
+        );
+      })
+    : undefined;
+
+  const matchingWeeklyItems = normalizedSearchTerm
+    ? searchableWeeklyPlans
+        .flatMap((plan) => {
+          return plan.items.map((item) => {
+            return {
+              item,
+              planId: plan.id,
+              weekOf: plan.weekOf,
+            };
+          });
+        })
+        .filter(({ item, weekOf }) => {
+          const searchableText = [
+            item.title,
+            item.githubUrl ?? "",
+            getWeeklyItemLabel(item.githubUrl),
+            formatSearchWeek(weekOf),
+          ]
+            .join(" ")
+            .toLowerCase();
+
+          return matchesWorkspaceSearch(searchableText, normalizedSearchTerm);
+        })
+    : [];
+
+  const matchingWeeklyJournalKeys = new Set(
+    matchingWeeklyItems
+      .map(({ item }) => {
+        return item.githubUrl ? getJournalKey(item.githubUrl) : undefined;
+      })
+      .filter((journalKey): journalKey is string => {
+        return typeof journalKey === "string";
+      }),
+  );
 
   const visibleJournals = journals.filter((journal) => {
     const searchableText = journal.entries
@@ -574,7 +695,10 @@ export default function QuickCaptureForm() {
       .join(" ")
       .toLowerCase();
 
-    return searchableText.includes(normalizedSearchTerm);
+    return (
+      matchesWorkspaceSearch(searchableText, normalizedSearchTerm) ||
+      matchingWeeklyJournalKeys.has(getJournalKey(journal.githubUrl))
+    );
   });
 
   return (
@@ -631,6 +755,7 @@ export default function QuickCaptureForm() {
             journalEntries={journalEntries}
             selectedWeek={selectedWeek}
             onSelectedWeekChange={setSelectedWeek}
+            onWeeklyPlansChange={setSearchableWeeklyPlans}
             onOpenJournal={handleOpenJournal}
             onCreateJournal={handleCreateJournalFromWeeklyPlan}
             onDueReminderCountChange={setDueReminderCount}
@@ -732,7 +857,7 @@ export default function QuickCaptureForm() {
             >
               <div className="case-toolbar">
                 <div className="search-field">
-                  <label htmlFor="journal-search">Search journals</label>
+                  <label htmlFor="journal-search">Search workspace</label>
 
                   <input
                     className="form-control"
@@ -742,7 +867,7 @@ export default function QuickCaptureForm() {
                     onChange={(event) => {
                       setSearchTerm(event.currentTarget.value);
                     }}
-                    placeholder="Search journals, notes, or next steps"
+                    placeholder="Search journals, weekly tasks, notes, or next steps"
                   />
                 </div>
 
@@ -792,11 +917,61 @@ export default function QuickCaptureForm() {
                 {journalEntries.length === 1 ? "entry" : "entries"}
               </p>
 
-              {normalizedSearchTerm && visibleJournals.length === 0 && (
-                <p className="empty-message" role="status">
-                  No saved journals match “{searchTerm.trim()}”.
-                </p>
+              {normalizedSearchTerm && matchingWeeklyItems.length > 0 && (
+                <section
+                  className="weekly-search-results"
+                  aria-labelledby="weekly-search-results-title"
+                >
+                  <div className="weekly-search-results-heading">
+                    <h2 id="weekly-search-results-title">
+                      Weekly plan matches
+                    </h2>
+                    <span>{matchingWeeklyItems.length}</span>
+                  </div>
+
+                  <ul className="weekly-search-result-list">
+                    {matchingWeeklyItems.map(({ item, planId, weekOf }) => {
+                      return (
+                        <li
+                          className="weekly-search-result"
+                          key={`${planId}-${item.id}`}
+                        >
+                          <div className="weekly-search-result-copy">
+                            <span className="weekly-search-result-type">
+                              {getWeeklyItemLabel(item.githubUrl)}
+                            </span>
+
+                            <div>
+                              <strong>{item.title}</strong>
+                              <p>Week of {formatSearchWeek(weekOf)}</p>
+                            </div>
+                          </div>
+
+                          <button
+                            className="secondary-button compact-button"
+                            type="button"
+                            onClick={() => {
+                              setSelectedWeek(weekOf);
+                              setSearchTerm("");
+                              setActiveView("week");
+                            }}
+                          >
+                            Open week
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
               )}
+
+              {normalizedSearchTerm &&
+                visibleJournals.length === 0 &&
+                matchingWeeklyItems.length === 0 && (
+                  <p className="empty-message" role="status">
+                    No journals or weekly tasks match “{searchTerm.trim()}”.
+                  </p>
+                )}
 
               <ul className="case-list">
                 {visibleJournals.map((journal) => {
@@ -837,6 +1012,80 @@ export default function QuickCaptureForm() {
               </ul>
             </section>
           </div>
+        </div>
+      )}
+
+      {openJournal && (
+        <div
+          className="journal-drawer-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setOpenJournalUrl(null);
+            }
+          }}
+        >
+          <aside
+            className="journal-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="journal-drawer-title"
+          >
+            <header className="journal-drawer-header">
+              <div>
+                <p className="panel-kicker">Journal</p>
+                <h2 id="journal-drawer-title">Review and update</h2>
+              </div>
+
+              <button
+                ref={journalDrawerCloseRef}
+                className="journal-drawer-close"
+                type="button"
+                aria-label="Close journal"
+                onClick={() => {
+                  setOpenJournalUrl(null);
+                }}
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </header>
+
+            <ul className="journal-drawer-list">
+              <JournalCaseCard
+                caseElementId={`journal-drawer-${encodeURIComponent(
+                  getJournalKey(openJournal.githubUrl),
+                )}`}
+                journalCase={openJournal}
+                initiallyExpanded
+                editingEntryId={editingEntryId}
+                updatingCaseUrl={updatingCaseUrl}
+                editingNextStepId={editingNextStepId}
+                onStartEditingEntry={(entryId) => {
+                  setEditingEntryId(entryId);
+                }}
+                onCancelEditingEntry={() => {
+                  setEditingEntryId(null);
+                }}
+                onStartAddingUpdate={(githubUrl) => {
+                  setUpdatingCaseUrl(githubUrl);
+                }}
+                onCancelAddingUpdate={() => {
+                  setUpdatingCaseUrl(null);
+                }}
+                onStartEditingNextStep={(entryId) => {
+                  setEditingNextStepId(entryId);
+                }}
+                onCancelEditingNextStep={() => {
+                  setEditingNextStepId(null);
+                }}
+                onAddUpdate={handleAddUpdate}
+                onEditNextStep={handleNextStepEditSubmit}
+                onEditEntry={handleEditSubmit}
+                onUpdateEntryBody={handleUpdateEntryBody}
+                onDeleteEntry={handleDelete}
+              />
+            </ul>
+          </aside>
         </div>
       )}
     </div>
